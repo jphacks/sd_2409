@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セルフレジ-tore-</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/tore_icon.jpg" type="image/jpeg">
+    <!-- Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <header class="header">
+        <div class="header__left-div">
+            <img class="header__tore-icon" src="/static/tore_icon_transparent.png" alt="Tore Icon" id="debugButton">
+            <h1 id="page-title">
+                <ruby>メニューを確認してください<rt>Please check the menu</rt></ruby>
+            </h1>
+        </div>
+        <div class="header__right-div">
+            <div class="header__buttons">
+                <div id="load-time" style="margin-right: 1vw;">判定時間: </div>
+                <button id="retry-button">再スキャン</button>
+                <button id="cancel-button" class="cancel-button">前画面に戻る</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 画像とメニューの部分 -->
+    <div id="content" class="container">
+        <div class="main">
+            <div class="left">
+                <div id="imageDiv">
+                    <div id="bboxDiv">
+                        <!-- ここにbboxが入る -->
+                         <p>わわあ</p>
+                    </div>
+                    <img id="detected-image" src="" alt="検出結果画像">
+                </div>
+            </div>
+            <div class="right">
+                <ul id="menu-list">
+                    <!-- ここにメニューが入る -->
+                </ul>
+                <button id="add-button" class="add-button">+</button>
+
+                <!-- 変更メニュー入力用のフォーム -->
+                <div id="custom-menu-form" style="display:none;">
+                    <div id="manual-input"><ruby>手入力でのメニュー修正<rt>Manual menu editing</rt></ruby></div>
+                    <input type="text" id="custom-menu-name" list="manual-menu-options" placeholder="メニュー名">
+                    <datalist id="manual-menu-options"></datalist> <!-- 手入力候補のデータリスト -->
+                    <input type="number" id="custom-menu-price" placeholder="価格" readonly style="cursor: default;">
+                    <button id="add-custom-menu">修正</button>
+                </div>
+
+                <!--追加メニュー入力用のフォーム -->
+                <div id="add-menu-form" style="display:none;">
+                    <div id="manual-input"><ruby>手入力でのメニュー追加<rt>Manual menu adding</rt></ruby></div>
+                    <input type="text" id="add-menu-name" list="manual-menu-options" placeholder="メニュー名">
+                    <datalist id="manual-menu-options"></datalist> <!-- 手入力候補のデータリスト -->
+                    <input type="number" id="add-menu-price" placeholder="価格" readonly style="cursor: default;">
+                    <button id="add-add-menu">追加</button>
+                </div>
+            </div>
+        </div>
+        <div class="bottom">
+            <div class="bottom__left">
+                <div id="payment-message">
+                </div>
+            </div>
+            <div class="bottom__right">
+                <div id="total">
+                    <ruby>合計: ¥<span id="total-price">0</span>円<rt>Total</rt></ruby>
+                </div>
+                <button id="confirm-button" data-uuid="{{ uuid }}">
+                    <ruby>確定<rt>Confirm</rt></ruby>
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- スクリプト -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- SocketIO用のスクリプト -->
+    <script src="/static/scripts_index.js"></script>
+</body>
+
+</html>

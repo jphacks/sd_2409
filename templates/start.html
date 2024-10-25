@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セルフレジ-tore-</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/tore_icon.jpg" type="image/jpeg">
+    <!-- Noto Sans JP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <!-- hand -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=touch_app" />
+</head>
+
+<body>
+    <header class="header">
+        <div class="header__left-div">
+            <img class="header__tore-icon" src="/static/tore_icon_transparent.png" alt="Tore Icon" id="debugButton">
+            <h1 id="page-title">
+                <ruby>トレーの位置を確認してください<rt>Please check the tray position</rt></ruby>
+            </h1>
+        </div>
+        <div class="header__right-div">
+            <div id="load-time" style="margin-right: 1vw;">UUID: {{ uuid }}</div>
+            <select id="cameraSelect">
+                <!-- <option value="">カメラを選択してください</option> -->
+            </select>
+        </div>
+    </header>
+
+    <img id="tore-icon" src="/static/tore_icon_transparent.png" alt="Tore Icon">
+
+    <!-- 会計開始ボタン -->
+    <button id="start-button" data-uuid="{{ uuid }}">
+        <ruby>会計を始める<rt>Start Checkout</rt></ruby>
+        <span id="hand-icon" class="material-symbols-outlined">touch_app</span> <!-- 手のアイコン -->
+    </button>
+
+    <!-- カメラ映像を表示するビデオ要素 -->
+    <video id="video" autoplay playsinline></video>
+
+    
+    <!-- 管理ページボタン -->
+    <button id="admin-page-button" class="admin-button">
+        <rt>管理</rt>
+    </button>
+    <!-- パスワード入力用モーダル -->
+    <div id="password-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span id="close-modal" class="close">&times;</span>
+            <h2>管理者パスワード</h2>
+            <label for="admin-password">パスワードを入力してください:</label>
+            <input type="password" id="admin-password">
+            <button id="submit-password">送信</button>
+            <p id="password-error" style="color: red; display: none;">パスワードが間違っています。</p>
+        </div>
+    </div>
+
+    <!-- スクリプト -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- SocketIO用のスクリプト -->
+    <script src="/static/scripts_start.js"></script>
+</body>
+</html>

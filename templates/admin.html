@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理ページ</title>
+    <link rel="stylesheet" href="/static/styles_admin.css">
+</head>
+<body>
+    <h1>管理ページ</h1>
+    
+    <!-- menu_cache.jsonリセットボタン -->
+    <button id="reset-menu-cache" class="reset-button">【RESET】手入力メニュー</button>
+
+    <!-- 前画面に戻るボタンを追加 -->
+    <button id="back-button" class="cancel-button">前画面に戻る</button>
+
+    <script>
+        // 前画面に戻るボタンのクリックイベントを追加
+        document.getElementById('back-button').addEventListener('click', function() {
+            window.location.href = '/';  // ホーム（index.html）に戻る
+        });
+
+        document.getElementById('reset-menu-cache').addEventListener('click', function() {    
+            // サーバーにリセットリクエストを送信
+            fetch('/reset_menu_cache', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('menu_cache.jsonが正常にリセットされました。');
+                } else {
+                    alert('リセットに失敗しました。');
+                }
+            })
+            .catch(error => {
+                console.error('エラーが発生しました:', error);
+            });
+        });
+    </script>
+</body>
+</html>

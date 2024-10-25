@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Try Inference Server</title>
+</head>
+
+<body>
+    <h1>Try Inference Server</h1>
+    <p>推論サーバーをためすためのページです。</p>
+    <input type="file" id="fileInput" accept="image/*">
+    <textarea id="resultTextarea" cols="30" rows="10"></textarea>
+
+    <script>
+        // ---設定
+        const INFERENCE_SERVER_URL = 'https://192.168.3.5:7500/start_inference';
+
+        const fileInput = document.getElementById('fileInput');
+        const resultTextarea = document.getElementById('resultTextarea');
+
+        // ---画像が選択されたとき、画像をbase64に変換して推論サーバーに送信する
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = async () => {
+                // ---画像をbase64に変換する
+                const base64 = reader.result.split(',')[1];
+                // ---推論サーバーに送信する
+                const response = await fetch(INFERENCE_SERVER_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        image: base64,
+                    }),
+                });
+                // ---結果をtextareaに表示する
+                const result = await response.json();
+                resultTextarea.value = JSON.stringify(result, null, 2);
+            };
+        });
+    </script>
+</body>
+
+</html>

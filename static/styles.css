@@ -1,0 +1,492 @@
+body, button, input, select, textarea {
+  font-family: 'Noto Sans JP', sans-serif;
+  font-weight: 500;
+}
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100svh;
+  gap: 1vw;
+  color: #333;
+  user-select: none; /* 文字選択禁止 */
+}
+.container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  gap: 1vw;
+  padding: 1vw;
+}
+
+.left {
+  width: 50%;
+  max-width: 60vw; /* 画像の最大幅を制限 */
+  padding: 1vw;    /* 内側に余白を追加 */
+}
+#imageDiv{
+  /* とりあえずプレースホルダー */
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #e0e0e0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  font-family: 'Arial', sans-serif;
+  font-size: 18px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 5px solid #ccc;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+  box-sizing: border-box;
+}
+
+.left img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.right {
+  width: 50%;
+  padding: 1vw;    /* 内側に余白を追加 */ 
+}
+#bboxDiv{
+  position:absolute;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+/* ----------------------------------------------------------------- */
+/* startページ */
+/* ----------------------------------------------------------------- */
+#admin-page-button { /* 管理ページボタンのスタイル */
+  padding: 1vw 2vw;               /* ボタンを大きくする */
+  font-size: 2vw;                  /* 文字サイズを大きくする */
+  border: none;                     /* ボーダーをなくす */
+  border-radius: 1vw;              /* 角を丸くする */
+  box-shadow: 0vw 0.4vw 0.6vw rgba(0, 0, 0, 0.2); /* 影をつける */
+  position: fixed;                  /* 左下に固定する */
+  bottom: 2vw;                     /* 下からの距離を指定 */
+  right: 2vw;                       /* 左からの距離を指定 */
+  cursor: pointer;                  /* ポインタカーソルを表示 */
+  z-index: 20; 
+}
+/* PW入力モーダルの基本スタイル */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+.modal-content {
+  background-color: white;
+  margin: 15vh auto;
+  padding: 2vw;
+  border: 0.1vw solid #888;
+  width: 80vw;
+  max-width: 40vw;
+  border-radius: 1vw;
+}
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 2.8vw;
+}
+.close:hover, .close:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+/* ----------------------------------------------------------------- */
+#tore-icon {
+  position: absolute;  
+  bottom: 0.1vw;          
+  left: 0.1vw;        
+  width: 10vw;     
+}
+#start-button {
+  padding: 0vw 4vw 2vw 4vw; /*上 右 下 左*/ 
+  font-size: 8vw;             
+  background-color: #4CAF50;   
+  color: white;               
+  border: none;                /* ボーダーをなくす */
+  border-radius: 1vw;         /* 角を丸くする */
+  box-shadow: 0vw 0.4vw 0.6vw rgba(0, 0, 0, 0.2); /* 影をつけて立体感を出す */
+  transition: background-color 0.3s; /* 背景色が変わるアニメーションを追加 */
+  cursor: pointer;  
+  white-space: nowrap;        /* 改行を防ぐ */
+  
+  position: absolute;          
+  top: 50vh;                   
+  left: 50vw;                   
+  transform: translate(-50%, -35%); /* ヘッダーの分少し下にずらす */
+  z-index: 20;              
+}
+/* ルビ全体を中央揃え */
+#start-button ruby {
+  display: inline-flex;  /* rubyタグはインラインブロックにする */
+  flex-direction: column-reverse;
+}
+/* ルビ部分を中央に揃える */
+#start-button rt {
+  display: block;
+  text-align: center;         /* ルビ部分のテキストを中央に揃える */
+  font-size: 0.6em;           /* ルビの文字サイズを調整 */
+  color: white;               /* ルビの文字色をボタンの文字色と同じにする */
+}
+#hand-icon {
+  position: absolute;
+  right: -8vw;     /* ボタンの右側からはみ出すように調整 */
+  bottom: -8vw;    /* ボタンの下側からはみ出すように調整 */
+  font-size: 15vw;  /* アイコンのサイズ */
+  color: #4CAF50;    
+  z-index: 30;     
+  /* 白い外枠を追加する */
+  text-shadow: 
+    -3px -3px 0 #fff,    /* 左上に白い影を追加 */
+    3px -3px 0 #fff,     /* 右上に白い影を追加 */
+    -3px 3px 0 #fff,     /* 左下に白い影を追加 */
+    3px 3px 0 #fff;      /* 右下に白い影を追加 */
+}
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  font-size: 48px;  /* 必要に応じてサイズを変更 */
+}
+/* ----------------------------------------------------------------- */
+/* カメラ映像の表示サイズを指定 */
+#video {
+  position: fixed;         
+  top: 15vh;                
+  left: 50%;                   
+  transform: translate(-50%); 
+  width: 100vw;   
+  height: auto;       
+
+  object-fit: contain;   /* 縦横比を維持しながら画面に収まるようにする */
+  max-height: calc(99vh - 15vh); /* ヘッダーを除いた高さに合わせて調整 top: 15vhに合わせる */
+  opacity: 0.5;            /* 透過率50% */
+  z-index: 1;              /* 背景として扱うため、z-indexを低く設定 */
+  pointer-events: none; 
+}
+/* -------------------------------------------------------------------------------- */
+/* カメラ選択のドロップダウンメニュー */
+#cameraSelect {
+  top: 1vw;                
+  left: 1vw;               
+  z-index: 10;            
+  padding: 1vw;            /* ドロップダウンの内側に余白を追加 */
+  font-size: 2vw;          
+  border-radius: 0.5vw;   
+  border-color: #4CAF50;
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /*影を追加して視覚的に浮かせる */
+}
+/* ドロップダウンメニューのホバーエフェクト */
+#cameraSelect:hover {
+  border-color: #888;        /* ホバー時にボーダー色を変更 */
+  background-color: #f0f0f0; /* 背景色も少し変化 */
+}
+/* ドロップダウンメニューのフォーカスエフェクト */
+#cameraSelect:focus {
+  outline: none;            /* フォーカス時の標準のアウトラインを非表示 */
+  border-color: #4CAF50; 
+}
+/* -------------------------------------------------------------------------------- */
+/* indexページ */
+/* -------------------------------------------------------------------------------- */
+#menu-list {
+  font-size: 2vw; 
+  list-style-type: none;
+  padding: 0; 
+  margin: 0;
+  overflow-y: auto; /* メニューが多い場合はスクロールバーを表示 */
+}
+#menu-list li {
+  display: flex;                   /* リスト項目を横並びにする */
+  justify-content: space-between;  /* 項目内の要素を左右に分散配置 */
+  align-items: center;             /* 項目内の要素を中央揃え */
+  margin: 0.3vw 0vw;               /* 各リスト項目間の余白 */
+  padding: 0.6vw;                  /* 項目内の余白の大きさ */
+  line-height: 1;                /* 行間を広げて読みやすく */
+  background-color: #f9f9f9;     /* 背景色を薄いグレーに設定 */
+  border: 2px solid #ddd;        /* ボーダーを追加して視覚的に区別 */
+  border-radius: 0.5vw;            /* 角を丸めて柔らかい印象に */
+  transition: background-color 0.3s ease; /* ホバー時の背景色変化をアニメーションで */
+}
+#menu-list rt { /* メニューのルビ(ローマ字) */
+  font-size: 0.7em;   
+  text-align: left; 
+}
+#menu-list li:hover { /* ホバー時の背景色変化 */
+  background-color: #f1f1f1;
+}
+/* メニュー削除ボタン */
+.delete-button { 
+  width: 3rem; /* ボタンの幅を指定 */
+  height: 3rem; /* ボタンの高さを指定 */
+  text-align: center; /* ボタン内のテキストを中央揃え */
+  font-size: 2vw;   /* ボタンの文字サイズを指定 */
+  background-color: #f44336; /* ボタンの背景色を赤にする */
+  color: white;     /* ボタンの文字色を白にする */
+  border: none;     /* ボーダーをなくす */
+  border-radius: 0.5vw; /* 角を丸くする */
+  cursor: pointer;  /* ポインタカーソルを表示 */
+}
+/* メニュー追加ボタン */
+.add-button {
+  width: 3rem; /* ボタンの幅を指定 */
+  height: 3rem; /* ボタンの高さを指定 */
+  text-align: center; /* ボタン内のテキストを中央揃え */
+  font-size: 2vw;   /* ボタンの文字サイズを指定 */
+  background-color: #4CAF50;  /* 背景色を緑にする */
+  color: white;               /* 文字色を白にする */
+  border: none;               /* ボーダーをなくす */
+  border-radius: 0.5vw;         /* 角を丸くする */
+  cursor: pointer;            /* ポインタカーソルを表示 */
+
+  margin-right: 0.7vw; 
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.2); /* 影を追加して立体感を出す */
+  transition: background-color 0.3s ease; /* 背景色が変わるアニメーションを追加 */
+  float: right;     
+}
+/* ホバー時のエフェクト */
+.add-button:hover {
+  background-color: #45a049;   /* ホバー時に少し濃い緑に */
+}
+/* ----------------------------------------------------------------- */
+.bottom {
+  height: 10vh; 
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1vw;
+  background-color: #f9f9f9;
+  box-shadow: 0 0.2vw 0.4vw rgba(0, 0, 0, 0.2);
+}
+.bottom__left {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+}
+.bottom__right {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1vw;
+}
+
+#confirm-button {
+  font-size: 2.7vw;
+  /* padding: 30px 20px 15px 20px; 上 右 下 左 */
+  padding: 1.8vw 1vw 0.8vw 1vw;
+  background-color: #4CAF50;
+  color: white;        
+  border: none;         /* ボーダーをなくす */
+  border-radius: 1vw;   /* ボタンの角を丸くする（任意） */
+  cursor: pointer;      /* カーソルをポインターに変更 */
+}
+#confirm-button rt {
+  font-size: 0.6em;   
+}
+#total {
+  font-size: 2.7vw;
+  padding: 1.8vw 1vw 0.8vw 1vw;
+  background-color: #f1f1f1;  /* 背景色（必要に応じて） */
+  border: none;         /* ボーダーをなくす */
+  border-radius: 1vw;  /* 角を丸くする */
+}
+#total rt {
+  font-size: 0.6em;   
+  text-align: left; 
+}
+#payment-message {
+  font-size: 2vw;
+}
+/* ----------------------------------------------------------------- */
+/* ドロップダウンメニューのスタイル */
+.select-menu {
+  font-size: 2vw;               /* フォントサイズを設定 */
+  line-height: 1.2;             /*　行間 */
+  background-color: #f9f9f9;    
+  border: 0.2vw solid #ccc;      /* ボーダーのスタイル */
+  border-radius: 0.8vw;          /* 角を丸くする */
+  padding: 1vw;                 
+  width: 100%;                   /* 親要素に合わせた幅 */
+  box-sizing: border-box;        /* パディングやボーダーを含めた幅にする */
+  cursor: pointer;               /* ポインタカーソルを表示 */
+  z-index: 100;                  /* ドロップダウンメニューを前面に表示 */
+  position: absolute;            /* 絶対位置に配置 */
+  appearance: none;              /* ブラウザデフォルトのスタイルを無効に */
+}
+/* ドロップダウンメニューを閉じるための背景 */
+.background-overlay {
+  position: fixed;               /* 背景を画面全体に固定 */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* 半透明の黒背景 */
+  z-index: 99;                   /* ドロップダウンメニューの背面に表示 */
+}
+/* ----------------------------------------------------------------- */
+#custom-menu-form {
+  padding: 1vw;    /* フォーム内のパディング */
+  background-color: #f9f9f9; /* 背景色 */
+  border: 0.1vw solid #ddd;    /* ボーダー */
+  border-radius: 0.5vw;        /* 角を丸く */
+  font-size: 1.7vw;
+  background-color: #dcdcdc;
+}
+#custom-menu-form rt { /* ルビ(ローマ字) */
+  font-size: 0.7em;   
+  text-align: left; 
+}
+/* 入力欄の大きさを変更 */
+#custom-menu-form input {
+  width: 70%;         /* 幅を70%にする（親要素に合わせる） */
+  height: 5vh;        
+  font-size: 2vw;     
+  padding: 1vw;       
+  box-sizing: border-box; /* パディングを含めて要素の幅を計算 */
+  border-radius: 0.5vw; 
+}
+/* 追加ボタンのスタイル */
+#add-custom-menu {
+  width: 10vw;          
+  height: 5vh;
+  padding: 0 2vw;       /* ボタン内の余白を調整 */
+  font-size: 2vw;       
+  background-color: #4CAF50; /* 背景色を緑にする */
+  color: white;          /* 文字色を白にする */
+  border: none;          /* ボーダーを無効に */
+  border-radius: 0.5vw;    /* 角を丸くする */
+  cursor: pointer;       /* ポインタカーソルを表示 */
+}
+/* ----------------------------------------------------------------- */
+#add-menu-form {
+  padding: 1vw;    /* フォーム内のパディング */
+  background-color: #f9f9f9; /* 背景色 */
+  border: 0.1vw solid #ddd;    /* ボーダー */
+  border-radius: 0.5vw;        /* 角を丸く */
+  font-size: 1.7vw;
+  background-color: #dcdcdc;
+}
+#add-menu-form rt { /* ルビ(ローマ字) */
+  font-size: 0.7em;   
+  text-align: left; 
+}
+/* 入力欄の大きさを変更 */
+#add-menu-form input {
+  width: 70%;         /* 幅を70%にする（親要素に合わせる） */
+  height: 5vh;        
+  font-size: 2vw;     
+  padding: 1vw;       
+  box-sizing: border-box; /* パディングを含めて要素の幅を計算 */
+  border-radius: 0.5vw; 
+}
+/* 追加ボタンのスタイル */
+#add-add-menu {
+  width: 10vw;          
+  height: 5vh;
+  padding: 0 2vw;       /* ボタン内の余白を調整 */
+  font-size: 2vw;       
+  background-color: #4CAF50; /* 背景色を緑にする */
+  color: white;          /* 文字色を白にする */
+  border: none;          /* ボーダーを無効に */
+  border-radius: 0.5vw;    /* 角を丸くする */
+  cursor: pointer;       /* ポインタカーソルを表示 */
+}
+/* ----------------------------------------------------------------- */
+/* ヘッダー */
+/* ----------------------------------------------------------------- */
+.header{
+  display: flex; /* ヘッダー内の要素を横並びにする */
+  justify-content: space-between; /* 要素を左右に分散配置 */
+  align-items: center; /* 要素を中央揃え */
+  padding: 1vw; /* 内側に余白を追加 */
+  
+  box-shadow: 0 0.2vw 0.4vw rgba(0, 0, 0, 0.2); /* 影をつける */
+  height: 10vh; /* ヘッダーの高さ */
+  z-index: 100;
+}
+
+#page-title {
+  font-size: 2.4vw;
+}
+
+#page-title rt {
+  text-align: left;
+  font-size: 0.7em;
+  margin-bottom: 0.2vw;
+  color: #333;
+}
+
+.header__left-div{
+  display: flex;       /* ヘッダー内の要素を横並びにする */
+  align-items: center; /* 要素を中央揃え */
+  gap: 1vw;            /* 要素間の間隔を指定 */
+}
+
+.header__right-div{
+  display: flex; /* ヘッダー内の要素を横並びにする */
+  align-items: center; /* 要素を中央揃え */
+}
+
+.header__tore-icon{
+  width: 4.5vw; /* アイコンの幅を指定 */
+}
+
+/* tore-iconにホバーすると、回転するアニメーション */
+.header__tore-icon:hover{
+  animation: rotate 1s infinite linear;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.header__buttons { /* 右上に2つのボタンを配置 */
+  display: flex;
+  gap: 1vw;
+
+  & button{
+    padding: 1vw 2vw; /* ボタンの内側に余白を追加 */
+    font-size: 1.6vw; /* ボタンの文字サイズを指定 */
+    background-color: #4CAF50; /* ボタンの背景色を緑にする */
+    color: white; /* ボタンの文字色を白にする */
+    border: none; /* ボーダーをなくす */
+    border-radius: 0.5vw; /* 角を丸くする */
+    cursor: pointer; /* ポインタカーソルを表示 */
+  }
+
+  & button.cancel-button{
+    background-color: #f44336; /* キャンセルボタンは赤色 */
+  }
+}
+/* ----------------------------------------------------------------- */

@@ -1,0 +1,73 @@
+[
+    {
+        "display_name": "自家製カレールー",
+        "romaji": "JIKASEI KARERU",
+        "yolo_name": "homemade_curry_roux",
+        "jan_code": "2121052120794",
+        "price": 191
+    },
+    {
+        "display_name": "豆たっぷりヘルシーサラダ",
+        "jan_code": "2199990140648",
+        "menu_code": "14064",
+        "price": 165,
+        "romaji": "MAME TAPPURI HERUSHI SARADA",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "Ｋ２大トマトドライカレー",
+        "jan_code": "2121052117015",
+        "menu_code": "211701",
+        "price": 552,
+        "romaji": "TOMATO DORAI KARE",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "甘辛ダレささみフライ",
+        "jan_code": "2121052040528",
+        "menu_code": "204052",
+        "price": 209,
+        "romaji": "AMAKARA DARE SASAMI FURAI",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "小 ドライカレー",
+        "jan_code": "2121052117411",
+        "menu_code": "211741",
+        "price": 382,
+        "romaji": "DORAIKARE",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "牛焼肉おにぎり",
+        "jan_code": "2121053000415",
+        "menu_code": "300041",
+        "price": 130,
+        "romaji": "",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "パンプキンサラダ",
+        "jan_code": "2121052067068",
+        "menu_code": "206706",
+        "price": 66,
+        "romaji": "",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "大 理薬辛みそラーメン",
+        "jan_code": "2121052116858",
+        "menu_code": "211685",
+        "price": 484,
+        "romaji": "DAI RIYAKU KARAMISO RAMEN",
+        "yolo_name": ""
+    },
+    {
+        "display_name": "さば塩焼き",
+        "jan_code": "2199990032875",
+        "menu_code": "3287",
+        "price": 242,
+        "romaji": "SABASHIOYAKI",
+        "yolo_name": ""
+    }
+]
