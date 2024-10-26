@@ -1,68 +1,20 @@
-// なんかめちゃくちゃ長くなっちゃってるので、関数・クラス・コメントの折りたたみ機能を使うと便利です。。。
-
 ////////////////////////////////////////
 ////  会計開始や再スキャン時に共通の関数  ////
 ////////////////////////////////////////
-function handleStartOrRetry() {
+async function handleStartOrRetry() {
+    // ---画像を撮影し、その画像を推論する
+
     // 会計開始ボタンを非表示にし、コンテンツを表示
     // document.getElementById('start-button').style.display = 'none';
     // document.getElementById('content').style.display = 'flex';
     // document.getElementById('page-title').style.display = 'block';
     // document.querySelector('.header-buttons').style.display = 'flex';
     // document.getElementById('admin-page-button').style.display = 'none'; // 管理ページボタンを非表示
-    return
-    // カメラを起動して画像を取得し、サーバーに送信する
-    captureImage()
-        .then(imageBase64 => {
-            // クライアントで撮影した画像を、画面に表示する
-            document.getElementById('detected-image').src = imageBase64;
 
-            // サーバーに画像を送信して検出結果を取得する
-            return fetch('/start_inference', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: imageBase64 })
-            });
-            /*以下のようなjsonが返ってくる
-            {
-                'image': image_base64(str),
-                'items': [
-                    {'display_name': メニュー名(str), 'romaji': ローマ字(str), 'price': 価格(int), 'yolo_name': yolo名(str), 'jan_code': JANコード(str),},
-                    ...
-                ],
-                'total': 合計金額(int)
-            }
-            */
-
-        })
-        .then(response => response.json())
-        .then(data => {
-            // ---検出画像を表示する
-            document.getElementById('detected-image').src = 'data:image/jpeg;base64,' + data.image;
-            // ---合計金額を表示する
-            document.getElementById('total-price').textContent = data.total;
-
-            // ---以前のメニューをリセットする
-            menuObjects.resetMenuObjects();
-
-            // ---メニューを追加する
-            for (const item of data.items) {
-                console.log('item:', item);
-                if (item.display_name !== "unknown") {
-                    const newMenuObject = new MenuObject(menuObjects, item);
-                }
-            }
-
-            // 処理が完了したタイムスタンプを取得し、時間を表示する
-            const endTime = performance.now();  // 終了時間
-            const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
-            document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
-        })
-        .catch(error => {
-            console.error('エラー:', error);
-        });
+    return // [デバッグ用]
+    // ---カメラを起動して画像を取得し、サーバーに送信する
+    const capturedBase64Image = await captureImage();
+    await startInference(capturedBase64Image);
 }
 /**
  * メニューオブジェクトのパラメータクラス。
@@ -1224,15 +1176,13 @@ async function wait(ms) {
 let startTime;
 
 // ページ読み込み時に handleStartOrRetry を呼び出す
-window.onload = function () {
-    startTime = performance.now();
-    handleStartOrRetry();  // カメラ起動と会計開始処理
+window.onload = async () => {
+    await handleStartOrRetry();  // カメラ起動と会計開始処理
 };
 
 // 再スキャンボタンを押したときの処理
-document.getElementById('retry-button').addEventListener('click', function () {
-    startTime = performance.now();
-    handleStartOrRetry();
+document.getElementById('retry-button').addEventListener('click', async () => {
+    await handleStartOrRetry();
 });
 
 // 前の画面に戻るボタン がクリックされたときの処理
@@ -1263,21 +1213,22 @@ const bboxesObject = new Bboxes(bboxesDiv);
 // ----------
 // ---デバッグ用
 // ----------
-new MenuObject(menuObjects, {
-    "display_name": "塩キャベツサラダ",
-    "jan_code": "2121052057441",
-    "price": 66,
-    "romaji": "SHIO KYABETSU SARADA",
-    "yolo_name": "salted_cabbage_salad"
-});
-new MenuObject(menuObjects, {
-    "display_name": "中 自家製カレー",
-    "jan_code": "2121052120800",
-    "price": 341,
-    "romaji": "homemade_curry",
-    "yolo_name": "homemade_curry"
-});
-menuObjects.onItemListChanged();
+// new MenuObject(menuObjects, {
+//     "display_name": "塩キャベツサラダ",
+//     "jan_code": "2121052057441",
+//     "price": 66,
+//     "romaji": "SHIO KYABETSU SARADA",
+//     "yolo_name": "salted_cabbage_salad"
+// });
+// new MenuObject(menuObjects, {
+//     "display_name": "中 自家製カレー",
+//     "jan_code": "2121052120800",
+//     "price": 341,
+//     "romaji": "homemade_curry",
+//     "yolo_name": "homemade_curry"
+// });
+// menuObjects.onItemListChanged();
+
 // const testButton = document.getElementById('start-button');
 // testButton.addEventListener('click', async()=>{
 //     // ---メニューキャッシュを取得する
@@ -1296,6 +1247,77 @@ menuObjects.onItemListChanged();
 //     console.log('cache:\n', cache);
 // });
 
+/**
+ * 指定した画像で、推論を開始する
+ * @param {string} base64Image
+ */
+async function startInference(base64Image) {
+    const base64 = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
+    // ---時間を記録する
+    const startTime = performance.now();
+
+    // ---以前のメニューをリセットする
+    menuObjects.resetMenuObjects();
+
+    // ---入力された画像を表示する
+    const detectedImageElement = document.getElementById("detected-image");
+    detectedImageElement.src = 'data:image/jpeg;base64,' + base64;
+    // 画像の読み込みを待つ
+    await new Promise(resolve => detectedImageElement.onload = resolve);
+
+    // ---bboxを表示する
+    // bboxDivの大きさを、画像の大きさに合わせる
+    const bboxesDiv = document.getElementById("bboxesDiv")
+    const detectedImageElementRect = detectedImageElement.getBoundingClientRect();
+    bboxesDiv.style.width = detectedImageElementRect.width + 'px';
+    bboxesDiv.style.height = detectedImageElementRect.height + 'px';
+    bboxesDiv.style.display = 'block';
+
+    // ---推論を開始する
+    const response = await fetch('/start_inference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 })
+    });
+    const json = await response.json();
+
+    // ---検出画像を表示する
+    // document.getElementById("detected-image").src = 'data:image/jpeg;base64,' + json['image'];
+
+    // ---検出結果を表示する
+    for (const box of json['boxes']) {
+        console.log(box);
+        const responseMenuObject = box["menu_object"];
+        if (responseMenuObject && responseMenuObject["display_name"] !== "unknown") {
+            // ---メニューオブジェクトを作成する
+            const menuObject = new MenuObject(menuObjects, responseMenuObject);
+
+            // ---bboxを表示する
+            const bbox = box['xyxy'];
+            const x = bbox[0] * detectedImageElementRect.width;
+            const y = bbox[1] * detectedImageElementRect.height;
+            const w = (bbox[2] - bbox[0]) * detectedImageElementRect.width;
+            const h = (bbox[3] - bbox[1]) * detectedImageElementRect.height;
+            const newBbox = new Bbox(bboxesObject, {
+                x: x,
+                y: y,
+                w: w,
+                h: h,
+            }, menuObject);
+            bboxesObject.addBbox(newBbox);
+            // ---menuObjectに紐づける
+            menuObject.bbox = newBbox;
+        }
+    }
+
+    // 処理が完了したタイムスタンプを取得し、時間を表示する
+    const endTime = performance.now();  // 終了時間
+    const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
+    document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
+}
+
+
+// ---[デバッグ用]toreアイコンをクリックしたとき、ファイルから推論を開始する
 const debugButton = document.getElementById('debugButton');
 debugButton.addEventListener('click', async () => {
     // ---ファイルから推論する
@@ -1308,69 +1330,8 @@ debugButton.addEventListener('click', async () => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = async () => {
-            const base64 = reader.result.split(',')[1];
-            // ---時間を記録する
-            const startTime = performance.now();
-
-            // ---以前のメニューをリセットする
-            menuObjects.resetMenuObjects();
-
-            // ---入力された画像を表示する
-            const detectedImageElement = document.getElementById("detected-image");
-            detectedImageElement.src = 'data:image/jpeg;base64,' + base64;
-            // 画像の読み込みを待つ
-            await new Promise(resolve => detectedImageElement.onload = resolve);
-
-            // ---bboxを表示する
-            // TODO
-            // bboxDivの大きさを、画像の大きさに合わせる
-            const bboxesDiv = document.getElementById("bboxesDiv")
-            const detectedImageElementRect = detectedImageElement.getBoundingClientRect();
-            bboxesDiv.style.width = detectedImageElementRect.width + 'px';
-            bboxesDiv.style.height = detectedImageElementRect.height + 'px';
-            bboxesDiv.style.display = 'block';
-
-            // ---推論を開始する
-            const response = await fetch('/start_inference', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64 })
-            });
-            const json = await response.json();
-
-            // ---検出画像を表示する
-            document.getElementById("detected-image").src = 'data:image/jpeg;base64,' + json['image'];
-
-            // ---検出結果を表示する
-            for (const box of json['boxes']) {
-                console.log(box);
-                const responseMenuObject = box["menu_object"];
-                if (responseMenuObject["display_name"] !== "unknown") {
-                    // ---メニューオブジェクトを作成する
-                    const menuObject = new MenuObject(menuObjects, responseMenuObject);
-
-                    // ---bboxを表示する
-                    const bbox = box['xyxy'];
-                    const x = bbox[0] * detectedImageElementRect.width;
-                    const y = bbox[1] * detectedImageElementRect.height;
-                    const w = (bbox[2] - bbox[0]) * detectedImageElementRect.width;
-                    const h = (bbox[3] - bbox[1]) * detectedImageElementRect.height;
-                    const newBbox = new Bbox(bboxesObject, {
-                        x: x,
-                        y: y,
-                        w: w,
-                        h: h,
-                    }, menuObject);
-                    bboxesObject.addBbox(newBbox);
-                    // ---menuObjectに紐づける
-                    menuObject.bbox = newBbox;
-                }
-            }
-
-            // 処理が完了したタイムスタンプを取得し、時間を表示する
-            const endTime = performance.now();  // 終了時間
-            const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
-            document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
+            const base64Image = reader.result;
+            await startInference(base64Image);
         }
     });
 

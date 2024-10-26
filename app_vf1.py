@@ -172,14 +172,15 @@ def start_inference():
     total_price = 0
     for box in new_osresult['boxes']:
         menu_object = box['menu_object']
+        if not menu_object:
+            continue
         total_price += menu_object['price']
     
     # ---レスポンスを返す
     # OsaraShohinResultとほぼ同じ形式で返す
     return jsonify({
-        'image': image_base64,
+        # 'image': image_base64,
         "boxes": new_osresult["boxes"],
-        # 'items': menu_objects,
         'total': total_price
     })
 
