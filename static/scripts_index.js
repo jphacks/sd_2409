@@ -841,15 +841,102 @@ var socket = io(); // Socket.IOの初期化
 ///         確定ボタンクリック時         ///////
 ////////////////////////////////////////
 document.getElementById('confirm-button').addEventListener('click', async function () {
-    const uuid = this.getAttribute('data-uuid');  // data-uuid属性からUUIDを取得
+    const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
+    const isHit = Math.random() < hitProbability; // あたりかどうかの判定
+
+    const videoType = isHit ? 'hit' : 'miss'; // あたり/はずれに応じたフォルダ選択
+
+    try {
+        const response = await fetch(`/get_random_video?type=${videoType}`);
+        if (!response.ok) throw new Error('動画の取得に失敗しました');
+
+        const videoData = await response.json();
+        const videoUrl = videoData.video_url;
+
+        // ポップアップを開き、動画と終了後のあたりメッセージを表示
+        const popup = window.open("", "_blank", "width=800,height=600");
+
+        if (popup) {
+            popup.document.write(`
+                <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>動画再生</title>
+                    <style>
+                        body {
+                            margin: 0;
+                            display: flex;
+                            flex-direction: column;
+                            justify-content: flex-start;
+                            align-items: center;
+                            height: 100vh;
+                            background-color: black;
+                        }
+                        #hitMessage {
+                            display: none;
+                            color: yellow;
+                            font-size: 48px;
+                            text-align: center;
+                            margin-top: 20px;
+                            position: absolute;
+                            top: 10px;
+                        }
+                        video {
+                            width: 100%;
+                            height: auto;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div id="hitMessage">あたり！</div>
+                    <video id="popupVideo" controls autoplay muted playsinline>
+                        <source src="${videoUrl}" type="video/mp4">
+                        お使いのブラウザは動画をサポートしていません。
+                    </video>
+                    <script>
+                        const video = document.getElementById('popupVideo');
+                        const hitMessage = document.getElementById('hitMessage');
+
+                        video.addEventListener('ended', () => {
+                            if (${isHit}) {
+                                hitMessage.style.display = 'block'; // あたりメッセージを表示
+                            }
+                        });
+
+                        video.play().catch(error => console.error('自動再生に失敗しました:', error));
+                    </script>
+                </body>
+                </html>
+            `);
+
+            // あたりの場合にPythonファイルを実行する
+            if (isHit) {
+                await fetch('/run_hit_script', { method: 'POST' });
+            }
+        } else {
+            alert('ポップアップがブロックされました。');
+        }
+    } catch (error) {
+        alert(error.message);
+    }
+
+
+    const uuid = this.getAttribute('data-uuid'); // data-uuid属性からUUIDを取得
     console.log("Pythonの実行を要求します");
     document.getElementById('payment-message').innerHTML = `(${uuid})<br>お支払いに進んでください`;
 
-    // ---pythonの実行要求をサーバーに送信
+    // Pythonの実行要求をサーバーに送信
     socket.emit('request_python_execution', {
         'uuid': uuid,
         'jan_codes': menuObjects.getJanCodes()
     });
+
+    // 1秒待機後に画面遷移
+    await wait(1000);
+    window.location.href = '/start/' + uuid;
+
+
 
     // ---メニューリストを取得する
     // const selectedMenus = menuObjects.menuObjects.map(menuObject => menuObject.getMenuObjectParameters());
@@ -884,9 +971,12 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     //         console.error('注文の確定に失敗しました:', error);
     //     });  
     
-    await wait(1000); // 何となく1秒待つ
-    window.location.href = '/start/' + uuid; // 前画面に戻る
 });
+
+// 一定時間待つ関数
+async function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 ////////////////////////////////////////
 ///  カメラを起動し、画像をbase64で返す   ///

@@ -7,12 +7,15 @@ import numpy as np
 import base64
 import warnings
 import json
+import random
+from flask import Flask, send_file, abort
 
 from Yolov9Wrapper.Yolov9Wrapper import Yolov9
 from incomings.variables import EnvVariables
 from modules.MenuCache import MenuCache
 from modules.inference import inference_osara_shohin
 from modules.menu import Menu
+
 
 #############################################
 ##           初期設定(パスなど)             ##
@@ -392,6 +395,32 @@ def reset_menu_cache():
         print(f"エラーが発生しました: {e}")
         return jsonify({'success': False})
     
+
+########################################################
+##        　　　　　    ルーレット動画　               ##
+########################################################
+@app.route('/get_random_video', methods=['GET'])
+def get_random_video():
+    video_type = request.args.get('type', 'miss')  # hit か miss を取得
+    video_folder = os.path.join(app.root_path, 'static', 'videos', video_type)
+    videos = [f for f in os.listdir(video_folder) if f.endswith(('.mp4', '.avi'))]
+
+    if videos:
+        random_video = random.choice(videos)
+        video_url = url_for('static', filename=f'videos/{video_type}/{random_video}')
+        return jsonify({'video_url': video_url})
+    else:
+        abort(404, description="動画が見つかりません")
+
+@app.route('/run_hit_script', methods=['POST'])
+def run_hit_script():
+    try:
+        # 特定のPythonファイルを実行 (例: hit_script.py)
+        os.system('python3 hit_script.py')
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # 最後に実行する必要あり
 if __name__ == '__main__':
