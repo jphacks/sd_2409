@@ -739,12 +739,12 @@ document.getElementById('add-button').addEventListener('click', () => {
  * @property {HTMLSpanElement} bboxSpanElement bboxのspan要素
  */
 
-class Bbox{
+class Bbox {
     /**
      * bboxオブジェクトのクラス
      * @param {BboxParameters} parameters
      */
-    constructor(parentBboxes=undefined, parameters={}){
+    constructor(parentBboxes = undefined, parameters = {}) {
         /**@type {number} bboxのx座標*/
         this.x = parameters.x;
         /**@type {number} bboxのx座標*/
@@ -760,7 +760,7 @@ class Bbox{
         /**@type {BboxElements} bboxの表示用DOM要素*/
         this.elements = this.createElement();
         this.update();
-        if(this.parentBboxes){
+        if (this.parentBboxes) {
             this.parentBboxes.addBbox(this);
         }
     }
@@ -769,7 +769,7 @@ class Bbox{
     // ---HTMLElementの管理系
     // ----------
 
-    createElement(){
+    createElement() {
         /*
         これをつくる
         <div class="bboxDiv">
@@ -780,13 +780,12 @@ class Bbox{
         // ----------
         // ---要素の作成
         // ----------
-        const bboxDivElement= document.createElement('div');
+        const bboxDivElement = document.createElement('div');
         bboxDivElement.classList.add('bboxDiv');
 
         const bboxSpanElement = document.createElement('span');
         bboxSpanElement.classList.add('bboxSpan');
         bboxDivElement.appendChild(bboxSpanElement);
-
 
         // ----------
         // ---interactjsの設定
@@ -807,12 +806,12 @@ class Bbox{
                     this.update();
                 }
             })
-            .on('doubletap', () => {
-                this.delete();
-            });
 
-        // ---表示の更新
-        console.log(this.menuObject);
+        
+        // ---イベントの設定
+        // bboxDivElement.addEventListener('dblclick', () => {
+        //     this.delete();
+        // });
 
         // ---返却
         return {
@@ -821,9 +820,12 @@ class Bbox{
         }
     }
 
-    update(){
+    /**
+     * bboxの表示用の要素を更新する
+     */
+    update() {
         // ---spanに表示するラベルの更新
-        console.log(this.menuObject.display_name);
+        console.log(this.x, this.y, this.w, this.h);
         this.elements.bboxSpanElement.textContent = this.menuObject.display_name;
 
         // ---divの位置とサイズの更新
@@ -831,28 +833,68 @@ class Bbox{
         this.elements.bboxDivElement.style.top = `${this.y}px`;
         this.elements.bboxDivElement.style.width = `${this.w}px`;
         this.elements.bboxDivElement.style.height = `${this.h}px`;
-
     }
 
-    setValue(parameter){
+    /**
+     * bboxの値を変更する
+     * @param {BboxParameters} parameter
+     */
+    setValue(parameter) {
+        this.x = parameter.x ?? this.x;
+        this.y = parameter.y ?? this.y;
+        this.w = parameter.w ?? this.w;
+        this.h = parameter.h ?? this.h;
+        this.menuObject = parameter.menuObject ?? this.menuObject;
 
         this.update();
     }
 
-    delete(){
+    /**
+     * bboxを削除する
+     */
+    delete() {
         // ---親のリストから削除してもらう
         if (this.parentBboxes) {
             this.parentBboxes.deleteBbox(this);
         }
 
+        // ---要素を削除
+        this.elements.bboxDivElement.remove();
     }
 
+    /**
+     * このBboxを、{xyxy: [x, y, x+w, y+h], menu_object: MenuObjectParameters}として返す
+     * @returns {{xyxy: number[], menu_object: MenuObjectParameters}}
+     */
+    getBboxParameters() {
+        if (!this.parentBboxes) return;
+        // ---画面サイズ座標を取得
+        topleftX = this.x;
+        topleftY = this.y;
+        bottomrightX = this.x + this.w;
+        bottomrightY = this.y + this
+        // ---画面サイズ座標を正規化して返す
+        normarized_topleftX = topleftX / this.parentBboxes.rootElement.clientWidth;
+        normarized_topleftY = topleftY / this.parentBboxes.rootElement.clientHeight;
+        normarized_bottomrightX = bottomrightX / this.parentBboxes.rootElement.clientWidth;
+        normarized_bottomrightY = bottomrightY / this.parentBboxes.rootElement.clientHeight;
+
+        return {
+            "xyxy": [normarized_topleftX,
+                normarized_topleftY,
+                normarized_bottomrightX,
+                normarized_bottomrightY],
+            "menu_object": this.menuObject.getMenuObjectParameters()
+        }
+    }
 }
 
-class Bboxes{
-    constructor(rootElement){
+class Bboxes {
+    constructor(rootElement) {
         /**@type {HTMLElement} bboxリストを入れ込む要素*/
         this.rootElement = rootElement;
+        // divのサイズは、this.rootElementから取得する
+
         /**@type {Bbox[]} bboxのリスト*/
         this.bboxes = [];
         /**@type {(changedBbox: Bbox) => void} リスト内bboxの値が変更されたときのコールバック*/
@@ -862,7 +904,11 @@ class Bboxes{
     // ----------
     // ---リスト操作
     // ----------
-    addBbox(bbox){
+    /**
+     * Bboxを追加する
+     * @param {Bbox} bbox
+     */
+    addBbox(bbox) {
         // ---親を設定
         bbox.parentBboxes = this;
         // ---リストに追加
@@ -872,7 +918,11 @@ class Bboxes{
         // ---コールバックを実行
         this.onItemListChanged(bbox);
     }
-    deleteBbox(bbox){
+    /**
+     * Bboxをリストから削除する
+     * @param {Bbox} bbox
+     */
+    deleteBbox(bbox) {
         // ---フィルターで削除
         this.bboxes = this.bboxes.filter(obj => obj !== bbox);
         // ---コールバックを実行
@@ -887,17 +937,17 @@ const manualInputDatalist = document.getElementById('manual-menu-options'); // H
 // メニューを検索して候補を表示する共通関数
 function searchAndDisplayMenuOptions(inputElement, priceElement, datalistElement) {
     let debounceTimeout = null;
-    
+
     inputElement.addEventListener('input', async () => {
         clearTimeout(debounceTimeout);
-        
+
         debounceTimeout = setTimeout(async () => {
             const inputDisplayName = inputElement.value.trim();
             if (inputDisplayName.length === 0) return;
-            
+
             // サーバーでメニューを検索する
             const items = await menuServer.searchMenu('display_name', inputDisplayName);
-            
+
             // datalistで候補を表示する
             datalistElement.innerHTML = '';  // 既存の候補をクリア
             for (const item of items) {
@@ -905,7 +955,7 @@ function searchAndDisplayMenuOptions(inputElement, priceElement, datalistElement
                 optionElement.value = item.display_name; // メニュー名を表示
                 optionElement.textContent = `¥${item.price}`; // 価格を表示
                 datalistElement.appendChild(optionElement);
-                
+
                 // 一致するメニュー名があれば価格を自動入力
                 if (item.display_name === inputDisplayName) {
                     priceElement.value = item.price;
@@ -1040,7 +1090,7 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     //     .catch(error => {
     //         console.error('注文の確定に失敗しました:', error);
     //     });  
-    
+
     await wait(1000); // 何となく1秒待つ
     window.location.href = '/start/' + uuid; // 前画面に戻る
 });
@@ -1128,7 +1178,7 @@ document.getElementById('retry-button').addEventListener('click', function () {
 // 前の画面に戻るボタン がクリックされたときの処理
 document.getElementById('cancel-button').addEventListener('click', function () {
     const uuid = document.getElementById('confirm-button').getAttribute('data-uuid');
-    window.location.href = '/start/' + uuid; 
+    window.location.href = '/start/' + uuid;
 });
 
 // ----------
@@ -1234,11 +1284,11 @@ debugButton.addEventListener('click', async () => {
             // ---検出結果を表示する
             for (const box of json['boxes']) {
                 console.log(box);
-                const responseMenuObject=box["menu_object"];
+                const responseMenuObject = box["menu_object"];
                 if (responseMenuObject["display_name"] !== "unknown") {
                     // ---メニューオブジェクトを作成する
                     const menuObject = new MenuObject(menuObjects, responseMenuObject);
-                    
+
                     // ---bboxを表示する
                     const bbox = box['xyxy'];
                     const x = bbox[0] * detectedImageElementRect.width;
