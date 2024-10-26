@@ -21,6 +21,7 @@ async function handleStartOrRetry() {
  * Pythonの、MenuObjectと同じ形式。
  * HTML要素の実態を持ったものを使いたい場合、MenuObjectを使う。
  * @typedef {Object} MenuObjectParameters
+ * @property {string?} menu_code メニューコード
  * @property {string?} display_name 表示名
  * @property {string?} romaji ローマ字
  * @property {string?} yolo_name yolo名
@@ -202,7 +203,7 @@ class MenuServer {
  * @returns {boolean} MenuObjectParametersであるかどうか
  */
 function isMenuObjectParameters(obj) {
-    return obj instanceof Object && 'display_name' in obj && 'romaji' in obj && 'yolo_name' in obj && 'jan_code' in obj && 'price' in obj;
+    return obj instanceof Object && "menu_code" in obj && 'display_name' in obj && 'romaji' in obj && 'yolo_name' in obj && 'jan_code' in obj && 'price' in obj;
 }
 
 /**
@@ -280,6 +281,8 @@ class MenuObject {
         /**@type {MenuObjects|undefined} 親MenuObjects*/
         this.parentMenuObjects = parentMenuObjects;
 
+        /**@type {string} メニューコード*/
+        this.menu_code = parameters.menu_code ?? '';
         /**@type {string} 表示名*/
         this.display_name = parameters.display_name ?? '';
         /**@type {string} ローマ字*/
@@ -481,6 +484,7 @@ class MenuObject {
      * @param {MenuObjectParameters} parameters
      */
     setValue(parameters) {
+        this.menu_code = parameters.menu_code ?? this.menu_code;
         this.display_name = parameters.display_name ?? this.display_name;
         this.romaji = parameters.romaji ?? this.romaji;
         this.yolo_name = parameters.yolo_name ?? this.yolo_name;
@@ -520,6 +524,7 @@ class MenuObject {
      */
     getMenuObjectParameters() {
         return {
+            menu_code: this.menu_code,
             display_name: this.display_name,
             romaji: this.romaji,
             yolo_name: this.yolo_name,
@@ -1094,6 +1099,7 @@ async function handleMenuInput(inputMenuName, inputMenuPrice, datalist, isAddNew
             w: 100,
             h: 100,
         }, newMenuObject);
+        newMenuObject.bbox = newBbox;
 
     } else {
         // 選択されたメニューオブジェクトを変更
@@ -1413,4 +1419,10 @@ debugButton.addEventListener('click', async () => {
         }
     });
 
+});
+
+// ---[デバッグ用]右クリックで、デバッグ表示する
+document.addEventListener('contextmenu', (e) => {
+    console.log('menuObjects:', menuObjects);
+    console.log('bboxesObject:', bboxesObject);
 });
