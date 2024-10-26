@@ -715,10 +715,57 @@ document.getElementById('add-button').addEventListener('click', () => {
  * @property {HTMLSpanElement} bboxSpanElement bboxのspan要素
  */
 
+/* # Bboxクラス
+bboxの表示等を管理するクラス
+
+## プロパティ
+- x: bboxのx座標(画面座標)
+- y: bboxのy座標(画面座標)
+- w: bboxの幅(画面座標)
+- h: bboxの高さ(画面座標)
+- menuObject: bboxに紐づいているメニューオブジェクト
+- parentBboxes: bboxを管理するBboxesオブジェクト
+- elements: bboxの表示用DOM要素
+
+## メソッド
+- setValue(parameters): bboxの値を変更する
+- delete(): bboxを削除する
+- getBboxParameters(): このbboxを、xyxyとmenuObjectを持つ形式で返す
+- 内部メソッド
+    - createElement(): bboxの表示用の要素を作成する
+    - update(): bboxの表示用の要素を更新する
+
+## 使い方
+```javascript
+// ---Bboxを作成する
+const bbox = new Bbox(bboxes, {
+    x: 100,
+    y: 100,
+    w: 100,
+    h: 100
+}, menuObject);
+
+// ---Bboxの値を変更する
+bbox.setValue({
+    x: 200,
+    y: 200,
+    w: 200,
+    h: 200
+});
+
+// ---Bboxを削除する
+bbox.delete();
+
+// ---BboxをxyxyとmenuObjectを持つ形式で取得する
+const parameters = bbox.getBboxParameters();
+console.log(parameters);
+
+```
+*/
 class Bbox {
     /**
      * bboxオブジェクトのクラス
-     * @param {Bboxes|undefined} parentBboxes bboxを管理するbboxesオブジェクト
+     * @param {Bboxes|undefined} parentBboxes bboxを管理するBboxesオブジェクト
      * @param {BboxParameters} parameters bboxのパラメータ
      * @param {MenuObject|undefined} menuObject 紐づけるメニューオブジェクト
      */
@@ -733,8 +780,8 @@ class Bbox {
         this.h = parameters.h;
         /**@type {MenuObject|undefined} bboxに紐づいているメニューオブジェクト*/
         this.menuObject = menuObject; // bboxに紐づいているメニューオブジェクト
-        /**@type {bboxes|undefined} bboxを管理するbboxesオブジェクト*/
-        this.parentBboxes = parentBboxes; // bboxを管理するbboxesオブジェクト
+        /**@type {Bboxes|undefined} bboxを管理するBboxesオブジェクト*/
+        this.parentBboxes = parentBboxes; // bboxを管理するBboxesオブジェクト
         /**@type {BboxElements} bboxの表示用DOM要素*/
         this.elements = this.createElement();
         this.update();
@@ -894,6 +941,37 @@ class Bbox {
     }
 }
 
+/* # Bboxesクラス
+bboxのリストを管理するクラス
+
+## プロパティ
+- rootElement: bboxリストを入れ込む要素
+- bboxes: bboxのリスト
+- onItemListChanged: リスト内bboxの値が変更されたときのコールバック
+
+## メソッド
+- addBbox(bbox): Bboxを追加する
+- deleteBbox(bbox): Bboxをリストから削除する
+
+## 使い方
+```javascript
+// ---Bboxesを作成する
+const bboxes = new Bboxes(document.getElementById('bbox-list'));
+
+// ---Bboxを追加する
+const bbox = new Bbox(bboxes, {
+    x: 100,
+    y: 100,
+    w: 100,
+    h: 100
+}, menuObject);
+bboxes.addBbox(bbox);
+
+// ---Bboxを削除する
+bboxes.deleteBbox(bbox);
+
+```
+*/
 class Bboxes {
     constructor(rootElement) {
         /**@type {HTMLElement} bboxリストを入れ込む要素*/
