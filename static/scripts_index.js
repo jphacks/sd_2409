@@ -321,8 +321,9 @@ class MenuObject {
      * 商品のデータ・表示を管理するクラス
      * @param {MenuObjects} parentMenuObjects 
      * @param {MenuObjectParameters} parameters 
+     * @param {Bbox} bbox 紐づけられたbbox
      */
-    constructor(parentMenuObjects = undefined, parameters = {}) {
+    constructor(parentMenuObjects = undefined, parameters = {}, bbox = undefined) {
         // ---親となるMenuObjectsを保存する(それぞれのメニューを管理するやつ)
         /**@type {MenuObjects|undefined} 親MenuObjects*/
         this.parentMenuObjects = parentMenuObjects;
@@ -340,6 +341,9 @@ class MenuObject {
 
         /**@type {boolean} ドロップダウンメニューが開いているかどうか*/
         this.isSelectOpen = false;
+
+        /**@type {Bbox|undefined} 紐づいたbbox*/
+        this.bbox = bbox;
 
         // ---DOM要素の作成・反映
         /**@type {MenuObjectElements} 商品の表示用DOM要素*/
@@ -404,6 +408,16 @@ class MenuObject {
         // ---イベントの設定
         // ----------
         liElement.addEventListener('click', async () => { // ドロップダウンメニューから選択させる
+            // ---紐づいたbboxを光らせる
+            if (this.bbox) {
+                console.log('bbox:', this.bbox);
+                const prevBorderColor = this.bbox.elements.bboxDivElement.style.borderColor;
+                this.bbox.elements.bboxDivElement.style.border = 'solid 2px green';
+                setTimeout(() => {
+                    this.bbox.elements.bboxDivElement.style.border = prevBorderColor;
+                }, 500);
+            }
+
             // ---開閉の切り替え
             if (this.isSelectOpen) {
                 return;
@@ -523,6 +537,11 @@ class MenuObject {
 
         this.update();
         this.parentMenuObjects.onItemValueChanged(this);
+
+        // ---紐づいたbboxを更新する
+        if (this.bbox) {
+            this.bbox.update();
+        }
     }
 
     /**
@@ -536,6 +555,11 @@ class MenuObject {
 
         // ---要素を削除
         this.elements.liElement.remove();
+
+        // ---紐づいたbboxを削除する
+        if (this.bbox) {
+            this.bbox.delete();
+        }
     }
 
     /**
@@ -742,9 +766,11 @@ document.getElementById('add-button').addEventListener('click', () => {
 class Bbox {
     /**
      * bboxオブジェクトのクラス
-     * @param {BboxParameters} parameters
+     * @param {Bboxes|undefined} parentBboxes bboxを管理するbboxesオブジェクト
+     * @param {BboxParameters} parameters bboxのパラメータ
+     * @param {MenuObject|undefined} menuObject 紐づけるメニューオブジェクト
      */
-    constructor(parentBboxes = undefined, parameters = {}) {
+    constructor(parentBboxes = undefined, parameters = {}, menuObject = undefined) {
         /**@type {number} bboxのx座標*/
         this.x = parameters.x;
         /**@type {number} bboxのx座標*/
@@ -754,7 +780,7 @@ class Bbox {
         /**@type {number} bboxの高さ*/
         this.h = parameters.h;
         /**@type {MenuObject|undefined} bboxに紐づいているメニューオブジェクト*/
-        this.menuObject = parameters.menuObject; // bboxに紐づいているメニューオブジェクト
+        this.menuObject = menuObject; // bboxに紐づいているメニューオブジェクト
         /**@type {bboxes|undefined} bboxを管理するbboxesオブジェクト*/
         this.parentBboxes = parentBboxes; // bboxを管理するbboxesオブジェクト
         /**@type {BboxElements} bboxの表示用DOM要素*/
@@ -798,7 +824,7 @@ class Bbox {
                     // ---移動範囲の制限
                     if (this.x < 0) this.x = 0;
                     if (this.y < 0) this.y = 0;
-                    if(this.parentBboxes){
+                    if (this.parentBboxes) {
                         if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.x = this.parentBboxes.rootElement.clientWidth - this.w;
                         if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.y = this.parentBboxes.rootElement.clientHeight - this.h;
                     }
@@ -807,13 +833,14 @@ class Bbox {
             })
             .resizable({
                 edges: { left: true, right: true, bottom: true, top: true },
+                invert: 'reposition',
                 onmove: (event) => {
                     this.w += event.dx;
                     this.h += event.dy;
                     // ---サイズの制限
                     if (this.w < 0) this.w = 0;
                     if (this.h < 0) this.h = 0;
-                    if(this.parentBboxes){
+                    if (this.parentBboxes) {
                         if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.w = this.parentBboxes.rootElement.clientWidth - this.x;
                         if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.h = this.parentBboxes.rootElement.clientHeight - this.y;
                     }
@@ -821,11 +848,23 @@ class Bbox {
                 }
             })
 
-        
+
         // ---イベントの設定
         // bboxDivElement.addEventListener('dblclick', () => {
         //     this.delete();
         // });
+        bboxDivElement.addEventListener('click', () => {
+            // ---bboxをクリックしたとき、紐づいたメニューオブジェクトを光らせる
+            // 2000ms、縁を光らせる
+            const prevBorderColor = this.menuObject.elements.liElement.style.border;
+            const prevShadow = this.menuObject.elements.liElement.style.boxShadow;
+            this.menuObject.elements.liElement.style.border = 'solid 2px red';
+            this.menuObject.elements.liElement.style.boxShadow = '0 0 10px red';
+            setTimeout(() => {
+                this.menuObject.elements.liElement.style.border = prevBorderColor;
+                this.menuObject.elements.liElement.style.boxShadow = prevShadow;
+            }, 500);
+        });
 
         // ---返却
         return {
@@ -839,7 +878,7 @@ class Bbox {
      */
     update() {
         // ---spanに表示するラベルの更新
-        console.log(this.x, this.y, this.w, this.h);
+        // console.log(this.x, this.y, this.w, this.h);
         this.elements.bboxSpanElement.textContent = this.menuObject.display_name;
 
         // ---divの位置とサイズの更新
@@ -908,7 +947,6 @@ class Bboxes {
         /**@type {HTMLElement} bboxリストを入れ込む要素*/
         this.rootElement = rootElement;
         // divのサイズは、this.rootElementから取得する
-
         /**@type {Bbox[]} bboxのリスト*/
         this.bboxes = [];
         /**@type {(changedBbox: Bbox) => void} リスト内bboxの値が変更されたときのコールバック*/
@@ -1017,8 +1055,16 @@ async function handleMenuInput(inputMenuName, inputMenuPrice, datalist, isAddNew
     }
 
     if (isAddNew) {
-        // 新しいメニューオブジェクトを追加
-        new MenuObject(menuObjects, newMenuObjectParameters);
+        // ---新しいメニューオブジェクトを追加
+        const newMenuObject = new MenuObject(menuObjects, newMenuObjectParameters);
+        // ---新しいbboxを追加
+        const newBbox = new Bbox(bboxesObject, {
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 100,
+        }, newMenuObject);
+
     } else {
         // 選択されたメニューオブジェクトを変更
         const selectedMenu = menuObjects.getSelectedMenu();
@@ -1314,9 +1360,10 @@ debugButton.addEventListener('click', async () => {
                         y: y,
                         w: w,
                         h: h,
-                        menuObject: menuObject
-                    });
+                    }, menuObject);
                     bboxesObject.addBbox(newBbox);
+                    // ---menuObjectに紐づける
+                    menuObject.bbox = newBbox;
                 }
             }
 
