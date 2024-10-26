@@ -46,10 +46,11 @@ import json
 from typing import Literal
 from modules.Types import MenuObject
 
+
 class CachedMenuObject(MenuObject):
     """キャッシュされたMenuObjectを表すデータクラス。
     個数の情報が追加されている。
-    
+
     Example:
     下のような形で保存される
     ```json
@@ -63,7 +64,9 @@ class CachedMenuObject(MenuObject):
         "count": int  # これまでに注文された数。「2」
     }
     """
+
     count: int  # これまでに注文された数。「2」
+
 
 class MenuCache:
     def __init__(self):
@@ -83,15 +86,17 @@ class MenuCache:
             if cached_menu_object["display_name"] == menu_object["display_name"]:
                 cached_menu_object["count"] += 1
                 return
-        self.cached_menu_objects.append({
-            "menu_code": menu_object["menu_code"],
-            "display_name": menu_object["display_name"],
-            "romaji": menu_object["romaji"],
-            "yolo_name": menu_object["yolo_name"],
-            "jan_code": menu_object["jan_code"],
-            "price": menu_object["price"],
-            "count": 1
-        })
+        self.cached_menu_objects.append(
+            {
+                "menu_code": menu_object["menu_code"],
+                "display_name": menu_object["display_name"],
+                "romaji": menu_object["romaji"],
+                "yolo_name": menu_object["yolo_name"],
+                "jan_code": menu_object["jan_code"],
+                "price": menu_object["price"],
+                "count": 1,
+            }
+        )
 
     def remove_cache(self, menu_object: CachedMenuObject):
         """CachedMenuObjectをキャッシュから削除する
@@ -152,6 +157,8 @@ class MenuCache:
         """
         with open(file_path, "r", encoding="utf-8") as f:
             self.cached_menu_objects = json.load(f)
+        if self.cached_menu_objects == []:
+            return
         if not all(
             [
                 self._is_valid_menu_object(menu_object)
