@@ -62,10 +62,41 @@ body {
   width: 50%;
   padding: 1vw;    /* 内側に余白を追加 */ 
 }
-#bboxDiv{
+#bboxesDiv{
   position:absolute;
-  background-color: rgba(0, 0, 0, 0.5);
+  /* background-color: rgba(0, 0, 0, 0.5); */
 }
+
+/* Container for bounding box */
+.bboxDiv {
+  position: absolute;
+  border: 2px solid rgba(0, 123, 255, 0.8); /* Light blue border */
+  background-color: rgba(0, 123, 255, 0.15); /* Translucent blue overlay */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+
+/* Label styling */
+.bboxDiv span {
+  position: absolute;
+  top: -1.5vw; /* Position label above bounding box */
+  left: 0;
+  padding: 0.4vw 0.8vw;
+  color: #fff;
+  font-size: 1vw;
+  font-weight: 500;
+  background-color: rgba(0, 123, 255, 0.9); /* Darker blue for contrast */
+  border-radius: 8px; /* Rounded corners for label */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15); /* Shadow for label */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Hover effect for bounding box */
+.bboxDiv:hover {
+  border-color: rgba(0, 123, 255, 1); /* Darker blue border on hover */
+  background-color: rgba(0, 123, 255, 0.2); /* Slightly darker overlay */
+}
+
 
 /* ----------------------------------------------------------------- */
 /* startページ */
@@ -230,6 +261,8 @@ body {
   border: 2px solid #ddd;        /* ボーダーを追加して視覚的に区別 */
   border-radius: 0.5vw;            /* 角を丸めて柔らかい印象に */
   transition: background-color 0.3s ease; /* ホバー時の背景色変化をアニメーションで */
+  transition: border-color 0.3s ease; /* ボーダー色変化をアニメーションで */
+  transition: box-shadow 0.3s ease; /* 影の変化をアニメーションで */
 }
 #menu-list rt { /* メニューのルビ(ローマ字) */
   font-size: 0.7em;   
@@ -332,7 +365,7 @@ body {
   border: 0.2vw solid #ccc;      /* ボーダーのスタイル */
   border-radius: 0.8vw;          /* 角を丸くする */
   padding: 1vw;                 
-  width: 100%;                   /* 親要素に合わせた幅 */
+  width: fit-content;                   /* 親要素に合わせた幅 */
   box-sizing: border-box;        /* パディングやボーダーを含めた幅にする */
   cursor: pointer;               /* ポインタカーソルを表示 */
   z-index: 100;                  /* ドロップダウンメニューを前面に表示 */

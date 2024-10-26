@@ -1,79 +1,46 @@
-// なんかめちゃくちゃ長くなっちゃってるので、関数・クラス・コメントの折りたたみ機能を使うと便利です。。。
-
 ////////////////////////////////////////
 ////  会計開始や再スキャン時に共通の関数  ////
 ////////////////////////////////////////
-function handleStartOrRetry() {
+async function handleStartOrRetry() {
+    // ---画像を撮影し、その画像を推論する
+
     // 会計開始ボタンを非表示にし、コンテンツを表示
     // document.getElementById('start-button').style.display = 'none';
     // document.getElementById('content').style.display = 'flex';
     // document.getElementById('page-title').style.display = 'block';
     // document.querySelector('.header-buttons').style.display = 'flex';
     // document.getElementById('admin-page-button').style.display = 'none'; // 管理ページボタンを非表示
-    return
-    // カメラを起動して画像を取得し、サーバーに送信する
-    captureImage()
-        .then(imageBase64 => {
-            // クライアントで撮影した画像を、画面に表示する
-            document.getElementById('detected-image').src = imageBase64;
 
-            // サーバーに画像を送信して検出結果を取得する
-            return fetch('/start_inference', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ image: imageBase64 })
-            });
-            /*以下のようなjsonが返ってくる
-            {
-                'image': image_base64(str),
-                'items': [
-                    {'display_name': メニュー名(str), 'romaji': ローマ字(str), 'price': 価格(int), 'yolo_name': yolo名(str), 'jan_code': JANコード(str),},
-                    ...
-                ],
-                'total': 合計金額(int)
-            }
-            */
-
-        })
-        .then(response => response.json())
-        .then(data => {
-            // ---検出画像を表示する
-            document.getElementById('detected-image').src = 'data:image/jpeg;base64,' + data.image;
-            // ---合計金額を表示する
-            document.getElementById('total-price').textContent = data.total;
-
-            // ---以前のメニューをリセットする
-            menuObjects.resetMenuObjects();
-
-            // ---メニューを追加する
-            for (const item of data.items) {
-                console.log('item:', item);
-                if (item.display_name !== "unknown") {
-                    const newMenuObject = new MenuObject(menuObjects, item);
-                }
-            }
-
-            // 処理が完了したタイムスタンプを取得し、時間を表示する
-            const endTime = performance.now();  // 終了時間
-            const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
-            document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
-        })
-        .catch(error => {
-            console.error('エラー:', error);
-        });
+    return // [デバッグ用]
+    // ---カメラを起動して画像を取得し、サーバーに送信する
+    const capturedBase64Image = await captureImage();
+    await startInference(capturedBase64Image);
 }
+
 /**
  * メニューオブジェクトのパラメータクラス。
  * Pythonの、MenuObjectと同じ形式。
  * HTML要素の実態を持ったものを使いたい場合、MenuObjectを使う。
  * @typedef {Object} MenuObjectParameters
+ * @property {string?} menu_code メニューコード
  * @property {string?} display_name 表示名
  * @property {string?} romaji ローマ字
  * @property {string?} yolo_name yolo名
  * @property {string?} jan_code jan_code
  * @property {number?} price 価格
+ * @property {NutritionParameters?} nutrition 栄養素
+ */
+
+/**
+ * 栄養素のパラメータクラス
+ * Pythonの、Nutritionと同じ形式。
+ * @typedef {Object} NutritionParameters
+ * @property {number?} energy エネルギー
+ * @property {number?} protein たんぱく質
+ * @property {number?} fat 脂質
+ * @property {number?} carbohydrates 炭水化物
+ * @property {number?} fiber 食物繊維
+ * @property {number?} vegetables 野菜
  */
 
 /* # MenuServerクラス
@@ -250,7 +217,7 @@ class MenuServer {
  * @returns {boolean} MenuObjectParametersであるかどうか
  */
 function isMenuObjectParameters(obj) {
-    return obj instanceof Object && 'display_name' in obj && 'romaji' in obj && 'yolo_name' in obj && 'jan_code' in obj && 'price' in obj;
+    return obj instanceof Object && "menu_code" in obj && 'display_name' in obj && 'romaji' in obj && 'yolo_name' in obj && 'jan_code' in obj && 'price' in obj && 'nutrition' in obj;
 }
 
 /**
@@ -321,12 +288,15 @@ class MenuObject {
      * 商品のデータ・表示を管理するクラス
      * @param {MenuObjects} parentMenuObjects 
      * @param {MenuObjectParameters} parameters 
+     * @param {Bbox} bbox 紐づけられたbbox
      */
-    constructor(parentMenuObjects = undefined, parameters = {}) {
+    constructor(parentMenuObjects = undefined, parameters = {}, bbox = undefined) {
         // ---親となるMenuObjectsを保存する(それぞれのメニューを管理するやつ)
         /**@type {MenuObjects|undefined} 親MenuObjects*/
         this.parentMenuObjects = parentMenuObjects;
 
+        /**@type {string} メニューコード*/
+        this.menu_code = parameters.menu_code ?? '';
         /**@type {string} 表示名*/
         this.display_name = parameters.display_name ?? '';
         /**@type {string} ローマ字*/
@@ -339,15 +309,14 @@ class MenuObject {
         this.price = parameters.price ?? 0;
 
         // 栄養価関連のプロパティを追加
-        this.energy = parameters.energy ?? 0;
-        this.protein = parameters.protein ?? 0;
-        this.fat = parameters.fat ?? 0;
-        this.carbohydrates = parameters.carbohydrates ?? 0;
-        this.fiber = parameters.fiber ?? 0;
-        this.vegetables = parameters.vegetables ?? 0;
+        /**@type {NutritionParameters|undefined} 栄養価*/
+        this.nutrition = parameters.nutrition;
 
         /**@type {boolean} ドロップダウンメニューが開いているかどうか*/
         this.isSelectOpen = false;
+
+        /**@type {Bbox|undefined} 紐づいたbbox*/
+        this.bbox = bbox;
 
         // ---DOM要素の作成・反映
         /**@type {MenuObjectElements} 商品の表示用DOM要素*/
@@ -412,6 +381,16 @@ class MenuObject {
         // ---イベントの設定
         // ----------
         liElement.addEventListener('click', async () => { // ドロップダウンメニューから選択させる
+            // ---紐づいたbboxを光らせる
+            if (this.bbox) {
+                console.log('bbox:', this.bbox);
+                const prevBorderColor = this.bbox.elements.bboxDivElement.style.borderColor;
+                this.bbox.elements.bboxDivElement.style.border = 'solid 2px green';
+                setTimeout(() => {
+                    this.bbox.elements.bboxDivElement.style.border = prevBorderColor;
+                }, 500);
+            }
+
             // ---開閉の切り替え
             if (this.isSelectOpen) {
                 return;
@@ -523,6 +502,7 @@ class MenuObject {
      * @param {MenuObjectParameters} parameters
      */
     setValue(parameters) {
+        this.menu_code = parameters.menu_code ?? this.menu_code;
         this.display_name = parameters.display_name ?? this.display_name;
         this.romaji = parameters.romaji ?? this.romaji;
         this.yolo_name = parameters.yolo_name ?? this.yolo_name;
@@ -530,15 +510,16 @@ class MenuObject {
         this.price = parameters.price ?? this.price;
 
         // 栄養価の更新を追加
-        this.energy = parameters.energy ?? this.energy;
-        this.protein = parameters.protein ?? this.protein;
-        this.fat = parameters.fat ?? this.fat;
-        this.carbohydrates = parameters.carbohydrates ?? this.carbohydrates;
-        this.fiber = parameters.fiber ?? this.fiber;
-        this.vegetables = parameters.vegetables ?? this.vegetables;
+        console.log(parameters.nutrition);
+        this.nutrition = parameters.nutrition ?? this.nutrition;
 
         this.update();
         this.parentMenuObjects.onItemValueChanged(this);
+
+        // ---紐づいたbboxを更新する
+        if (this.bbox) {
+            this.bbox.update();
+        }
     }
 
     /**
@@ -552,6 +533,11 @@ class MenuObject {
 
         // ---要素を削除
         this.elements.liElement.remove();
+
+        // ---紐づいたbboxを削除する
+        if (this.bbox) {
+            this.bbox.delete();
+        }
     }
 
     /**
@@ -560,17 +546,20 @@ class MenuObject {
      */
     getMenuObjectParameters() {
         return {
+            menu_code: this.menu_code,
             display_name: this.display_name,
             romaji: this.romaji,
             yolo_name: this.yolo_name,
             jan_code: this.jan_code,
             price: this.price,
-            energy: this.energy,
-            protein: this.protein,
-            fat: this.fat,
-            carbohydrates: this.carbohydrates,
-            fiber: this.fiber,
-            vegetables: this.vegetables
+            nutrition: {
+                energy: this.energy,
+                protein: this.protein,
+                fat: this.fat,
+                carbohydrates: this.carbohydrates,
+                fiber: this.fiber,
+                vegetables: this.vegetables
+            }
         };
     }
 }
@@ -738,10 +727,11 @@ class MenuObjects {
     }
 
     /**栄養の合計値を計算し，表を表示する関数
-     * @returns {object} 栄養の合計
+     * @returns {NutritionParameters} 栄養の合計値
      */
     calculateNutrition() {
         // 栄養素の合計値を保持するオブジェクト
+        /**@type {NutritionParameters} */
         const totalNutrition = {
             energy: 0,
             protein: 0,
@@ -753,34 +743,16 @@ class MenuObjects {
 
         // 各メニューオブジェクトをループして栄養素を加算
         for (const menuObject of this.menuObjects) {
-            //totalNutrition.energy += parseFloat(menuObject.energy) || menuObject.energy;
-            totalNutrition.energy += menuObject.energy;
-            console.log(menuObject.price)
-            totalNutrition.protein += parseFloat(menuObject.protein) || 0;
-            totalNutrition.fat += parseFloat(menuObject.fat) || 0;
-            totalNutrition.carbohydrates += parseFloat(menuObject.carbohydrates) || 0;
-            totalNutrition.fiber += parseFloat(menuObject.fiber) || 0;
-            totalNutrition.vegetables += parseFloat(menuObject.vegetables) || 0;
+            console.log(menuObject);
+            totalNutrition.energy += parseFloat(menuObject.nutrition.energy) || 0;
+            totalNutrition.protein += parseFloat(menuObject.nutrition.protein) || 0;
+            totalNutrition.fat += parseFloat(menuObject.nutrition.fat) || 0;
+            totalNutrition.carbohydrates += parseFloat(menuObject.nutrition.carbohydrates) || 0;
+            totalNutrition.fiber += parseFloat(menuObject.nutrition.fiber) || 0;
+            totalNutrition.vegetables += parseFloat(menuObject.nutrition.vegetables) || 0;
         }
 
         return totalNutrition;
-    }
-
-    /**栄養情報の表を更新する関数
-     * @param {object} nutrition 栄養素の合計
-     */
-    updateNutritionTable(nutrition) {
-        const tbody = document.getElementById('nutrition-table-body');
-        tbody.innerHTML = `
-            <tr>
-                <td>${nutrition.energy.toFixed(2)}</td>
-                <td>${nutrition.protein.toFixed(2)}</td>
-                <td>${nutrition.fat.toFixed(2)}</td>
-                <td>${nutrition.carbohydrates.toFixed(2)}</td>
-                <td>${nutrition.fiber.toFixed(2)}</td>
-                <td>${nutrition.vegetables.toFixed(2)}</td>
-            </tr>
-        `;
     }
 }
 
@@ -790,11 +762,318 @@ document.getElementById('add-button').addEventListener('click', () => {
     document.getElementById('add-menu-form').style.display = 'block'; // フォームを表示
 });
 
-// 一定時間待つ関数
-async function wait(ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
+/**
+ * bboxオブジェクトのパラメータクラス
+ * @typedef {Object} BboxParameters
+ * @property {number} x bboxのx座標
+ * @property {number} y bboxのy座標
+ * @property {number} w bboxの幅
+ * @property {number} h bboxの高さ
+ * @property {MenuObject|undefined} menuObject bboxに紐づいているメニューオブジェクト
+ */
+
+/**
+ * bboxのDOM要素を表現するクラス
+ * @typedef {Object} BboxElements
+ * @property {HTMLDivElement} bboxDivElement bboxのdiv要素
+ * @property {HTMLSpanElement} bboxSpanElement bboxのspan要素
+ */
+
+/* # Bboxクラス
+bboxの表示等を管理するクラス
+
+## プロパティ
+- x: bboxのx座標(画面座標)
+- y: bboxのy座標(画面座標)
+- w: bboxの幅(画面座標)
+- h: bboxの高さ(画面座標)
+- menuObject: bboxに紐づいているメニューオブジェクト
+- parentBboxes: bboxを管理するBboxesオブジェクト
+- elements: bboxの表示用DOM要素
+
+## メソッド
+- setValue(parameters): bboxの値を変更する
+- delete(): bboxを削除する
+- getBboxParameters(): このbboxを、xyxyとmenuObjectを持つ形式で返す
+- 内部メソッド
+    - createElement(): bboxの表示用の要素を作成する
+    - update(): bboxの表示用の要素を更新する
+
+## 使い方
+```javascript
+// ---Bboxを作成する
+const bbox = new Bbox(bboxes, {
+    x: 100,
+    y: 100,
+    w: 100,
+    h: 100
+}, menuObject);
+
+// ---Bboxの値を変更する
+bbox.setValue({
+    x: 200,
+    y: 200,
+    w: 200,
+    h: 200
+});
+
+// ---Bboxを削除する
+bbox.delete();
+
+// ---BboxをxyxyとmenuObjectを持つ形式で取得する
+const parameters = bbox.getBboxParameters();
+console.log(parameters);
+
+```
+*/
+class Bbox {
+    /**
+     * bboxオブジェクトのクラス
+     * @param {Bboxes|undefined} parentBboxes bboxを管理するBboxesオブジェクト
+     * @param {BboxParameters} parameters bboxのパラメータ
+     * @param {MenuObject|undefined} menuObject 紐づけるメニューオブジェクト
+     */
+    constructor(parentBboxes = undefined, parameters = {}, menuObject = undefined) {
+        /**@type {number} bboxのx座標*/
+        this.x = parameters.x;
+        /**@type {number} bboxのx座標*/
+        this.y = parameters.y;
+        /**@type {number} bboxの幅*/
+        this.w = parameters.w;
+        /**@type {number} bboxの高さ*/
+        this.h = parameters.h;
+        /**@type {MenuObject|undefined} bboxに紐づいているメニューオブジェクト*/
+        this.menuObject = menuObject; // bboxに紐づいているメニューオブジェクト
+        /**@type {Bboxes|undefined} bboxを管理するBboxesオブジェクト*/
+        this.parentBboxes = parentBboxes; // bboxを管理するBboxesオブジェクト
+        /**@type {BboxElements} bboxの表示用DOM要素*/
+        this.elements = this.createElement();
+        this.update();
+        if (this.parentBboxes) {
+            this.parentBboxes.addBbox(this);
+        }
+    }
+
+    // ----------
+    // ---HTMLElementの管理系
+    // ----------
+
+    createElement() {
+        /*
+        これをつくる
+        <div class="bboxDiv">
+            <span class="bboxSpan">{メニュー名}</span>
+        </div>
+        */
+
+        // ----------
+        // ---要素の作成
+        // ----------
+        const bboxDivElement = document.createElement('div');
+        bboxDivElement.classList.add('bboxDiv');
+
+        const bboxSpanElement = document.createElement('span');
+        bboxSpanElement.classList.add('bboxSpan');
+        bboxDivElement.appendChild(bboxSpanElement);
+
+        // ----------
+        // ---interactjsの設定
+        // ----------
+        interact(bboxDivElement)
+            .draggable({
+                onmove: (event) => {
+                    this.x += event.dx;
+                    this.y += event.dy;
+                    // ---移動範囲の制限
+                    if (this.x < 0) this.x = 0;
+                    if (this.y < 0) this.y = 0;
+                    if (this.parentBboxes) {
+                        if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.x = this.parentBboxes.rootElement.clientWidth - this.w;
+                        if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.y = this.parentBboxes.rootElement.clientHeight - this.h;
+                    }
+                    this.update();
+                }
+            })
+            .resizable({
+                edges: { left: true, right: true, bottom: true, top: true },
+                invert: 'reposition',
+                onmove: (event) => {
+                    this.w += event.dx;
+                    this.h += event.dy;
+                    // ---サイズの制限
+                    if (this.w < 0) this.w = 0;
+                    if (this.h < 0) this.h = 0;
+                    if (this.parentBboxes) {
+                        if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.w = this.parentBboxes.rootElement.clientWidth - this.x;
+                        if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.h = this.parentBboxes.rootElement.clientHeight - this.y;
+                    }
+                    this.update();
+                }
+            })
+
+
+        // ---イベントの設定
+        // bboxDivElement.addEventListener('dblclick', () => {
+        //     this.delete();
+        // });
+        bboxDivElement.addEventListener('click', () => {
+            // ---bboxをクリックしたとき、紐づいたメニューオブジェクトを光らせる
+            // 2000ms、縁を光らせる
+            const prevBorderColor = this.menuObject.elements.liElement.style.border;
+            const prevShadow = this.menuObject.elements.liElement.style.boxShadow;
+            this.menuObject.elements.liElement.style.border = 'solid 2px red';
+            this.menuObject.elements.liElement.style.boxShadow = '0 0 10px red';
+            setTimeout(() => {
+                this.menuObject.elements.liElement.style.border = prevBorderColor;
+                this.menuObject.elements.liElement.style.boxShadow = prevShadow;
+            }, 500);
+        });
+
+        // ---返却
+        return {
+            bboxDivElement,
+            bboxSpanElement
+        }
+    }
+
+    /**
+     * bboxの表示用の要素を更新する
+     */
+    update() {
+        // ---spanに表示するラベルの更新
+        // console.log(this.x, this.y, this.w, this.h);
+        this.elements.bboxSpanElement.textContent = this.menuObject.display_name;
+
+        // ---divの位置とサイズの更新
+        this.elements.bboxDivElement.style.left = `${this.x}px`;
+        this.elements.bboxDivElement.style.top = `${this.y}px`;
+        this.elements.bboxDivElement.style.width = `${this.w}px`;
+        this.elements.bboxDivElement.style.height = `${this.h}px`;
+    }
+
+    /**
+     * bboxの値を変更する
+     * @param {BboxParameters} parameter
+     */
+    setValue(parameter) {
+        this.x = parameter.x ?? this.x;
+        this.y = parameter.y ?? this.y;
+        this.w = parameter.w ?? this.w;
+        this.h = parameter.h ?? this.h;
+        this.menuObject = parameter.menuObject ?? this.menuObject;
+
+        this.update();
+    }
+
+    /**
+     * bboxを削除する
+     */
+    delete() {
+        // ---親のリストから削除してもらう
+        if (this.parentBboxes) {
+            this.parentBboxes.deleteBbox(this);
+        }
+
+        // ---要素を削除
+        this.elements.bboxDivElement.remove();
+    }
+
+    /**
+     * このBboxを、{xyxy: [x, y, x+w, y+h], menu_object: MenuObjectParameters}として返す
+     * @returns {{xyxy: number[], menu_object: MenuObjectParameters}}
+     */
+    getBboxParameters() {
+        if (!this.parentBboxes) return;
+        // ---画面サイズ座標を取得
+        const topleftX = this.x;
+        const topleftY = this.y;
+        const bottomrightX = this.x + this.w;
+        const bottomrightY = this.y + this.h;
+        // ---画面サイズ座標を正規化して返す
+        const normarized_topleftX = topleftX / this.parentBboxes.rootElement.clientWidth;
+        const normarized_topleftY = topleftY / this.parentBboxes.rootElement.clientHeight;
+        const normarized_bottomrightX = bottomrightX / this.parentBboxes.rootElement.clientWidth;
+        const normarized_bottomrightY = bottomrightY / this.parentBboxes.rootElement.clientHeight;
+
+        return {
+            "xyxy": [normarized_topleftX,
+                normarized_topleftY,
+                normarized_bottomrightX,
+                normarized_bottomrightY],
+            "menu_object": this.menuObject.getMenuObjectParameters()
+        }
+    }
+}
+
+/* # Bboxesクラス
+bboxのリストを管理するクラス
+
+## プロパティ
+- rootElement: bboxリストを入れ込む要素
+- bboxes: bboxのリスト
+- onItemListChanged: リスト内bboxの値が変更されたときのコールバック
+
+## メソッド
+- addBbox(bbox): Bboxを追加する
+- deleteBbox(bbox): Bboxをリストから削除する
+
+## 使い方
+```javascript
+// ---Bboxesを作成する
+const bboxes = new Bboxes(document.getElementById('bbox-list'));
+
+// ---Bboxを追加する
+const bbox = new Bbox(bboxes, {
+    x: 100,
+    y: 100,
+    w: 100,
+    h: 100
+}, menuObject);
+bboxes.addBbox(bbox);
+
+// ---Bboxを削除する
+bboxes.deleteBbox(bbox);
+
+```
+*/
+class Bboxes {
+    constructor(rootElement) {
+        /**@type {HTMLElement} bboxリストを入れ込む要素*/
+        this.rootElement = rootElement;
+        // divのサイズは、this.rootElementから取得する
+        /**@type {Bbox[]} bboxのリスト*/
+        this.bboxes = [];
+        /**@type {(changedBbox: Bbox) => void} リスト内bboxの値が変更されたときのコールバック*/
+        this.onItemListChanged = (changedBbox) => { };
+    }
+
+    // ----------
+    // ---リスト操作
+    // ----------
+    /**
+     * Bboxを追加する
+     * @param {Bbox} bbox
+     */
+    addBbox(bbox) {
+        // ---親を設定
+        bbox.parentBboxes = this;
+        // ---リストに追加
+        this.bboxes.push(bbox);
+        // ---要素を表示する
+        this.rootElement.appendChild(bbox.elements.bboxDivElement);
+        // ---コールバックを実行
+        this.onItemListChanged(bbox);
+    }
+    /**
+     * Bboxをリストから削除する
+     * @param {Bbox} bbox
+     */
+    deleteBbox(bbox) {
+        // ---フィルターで削除
+        this.bboxes = this.bboxes.filter(obj => obj !== bbox);
+        // ---コールバックを実行
+        this.onItemListChanged(bbox);
+    }
 }
 
 // ----------
@@ -804,17 +1083,17 @@ const manualInputDatalist = document.getElementById('manual-menu-options'); // H
 // メニューを検索して候補を表示する共通関数
 function searchAndDisplayMenuOptions(inputElement, priceElement, datalistElement) {
     let debounceTimeout = null;
-    
+
     inputElement.addEventListener('input', async () => {
         clearTimeout(debounceTimeout);
-        
+
         debounceTimeout = setTimeout(async () => {
             const inputDisplayName = inputElement.value.trim();
             if (inputDisplayName.length === 0) return;
-            
+
             // サーバーでメニューを検索する
             const items = await menuServer.searchMenu('display_name', inputDisplayName);
-            
+
             // datalistで候補を表示する
             datalistElement.innerHTML = '';  // 既存の候補をクリア
             for (const item of items) {
@@ -822,7 +1101,7 @@ function searchAndDisplayMenuOptions(inputElement, priceElement, datalistElement
                 optionElement.value = item.display_name; // メニュー名を表示
                 optionElement.textContent = `¥${item.price}`; // 価格を表示
                 datalistElement.appendChild(optionElement);
-                
+
                 // 一致するメニュー名があれば価格を自動入力
                 if (item.display_name === inputDisplayName) {
                     priceElement.value = item.price;
@@ -870,8 +1149,17 @@ async function handleMenuInput(inputMenuName, inputMenuPrice, datalist, isAddNew
     }
 
     if (isAddNew) {
-        // 新しいメニューオブジェクトを追加
-        new MenuObject(menuObjects, newMenuObjectParameters);
+        // ---新しいメニューオブジェクトを追加
+        const newMenuObject = new MenuObject(menuObjects, newMenuObjectParameters);
+        // ---新しいbboxを追加
+        const newBbox = new Bbox(bboxesObject, {
+            x: 0,
+            y: 0,
+            w: 100,
+            h: 100,
+        }, newMenuObject);
+        newMenuObject.bbox = newBbox;
+
     } else {
         // 選択されたメニューオブジェクトを変更
         const selectedMenu = menuObjects.getSelectedMenu();
@@ -918,6 +1206,9 @@ var socket = io(); // Socket.IOの初期化
 ///         確定ボタンクリック時         ///////
 ////////////////////////////////////////
 document.getElementById('confirm-button').addEventListener('click', async function () {
+    // ----------
+    // ---栄養表示の部分
+    // ----------
     // 栄養情報を模擬データとして設定（実際はAPIから取得）
     const nutritionData = [
         { energy: 200, protein: 10, fat: 5, carbs: 30, fiber: 2, vegetable: 50 },
@@ -941,7 +1232,11 @@ document.getElementById('confirm-button').addEventListener('click', async functi
         `;
         tbody.appendChild(row);
     });
-    
+
+    // ----------
+    // ---抽選部分
+    // ----------
+
     const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
     const isHit = Math.random() < hitProbability; // あたりかどうかの判定
 
@@ -1033,10 +1328,24 @@ document.getElementById('confirm-button').addEventListener('click', async functi
         'jan_codes': menuObjects.getJanCodes()
     });
 
-    await wait(3000); // 何となく1秒待つ->栄養情報の表示のため，ハッカソン用に3秒に変更．(町田)
-    window.location.href = '/start/' + uuid; // 前画面に戻る
+    // ---最終的な結果(アノテーションなど)をログ用APIに送る
+    // ---画像を取り出す
+    const detectImageElement = document.getElementById('detected-image');
+    const imageBase64 = detectImageElement.src;
+    await fetch("/logging", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "image": imageBase64,
+            "items": bboxesObject.bboxes.map(bbox => ({
+                "label": bbox.getBboxParameters().menu_object.menu_code,
+                "xyxy": bbox.getBboxParameters().xyxy,
+            }))
+        })
+    })
 
-
+    // await wait(1000); // 何となく1秒待つ
+    // window.location.href = '/start/' + uuid; // 前画面に戻る
 
     // ---メニューリストを取得する
     // const selectedMenus = menuObjects.menuObjects.map(menuObject => menuObject.getMenuObjectParameters());
@@ -1070,7 +1379,6 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     //     .catch(error => {
     //         console.error('注文の確定に失敗しました:', error);
     //     });  
-    
 });
 
 ////////////////////////////////////////
@@ -1135,63 +1443,76 @@ function captureImage() {
 let startTime;
 
 // ページ読み込み時に handleStartOrRetry を呼び出す
-window.onload = function () {
-    startTime = performance.now();
-    handleStartOrRetry();  // カメラ起動と会計開始処理
+window.onload = async () => {
+    await handleStartOrRetry();  // カメラ起動と会計開始処理
 };
 
 // 再スキャンボタンを押したときの処理
-document.getElementById('retry-button').addEventListener('click', function () {
-    startTime = performance.now();
-    handleStartOrRetry();
+document.getElementById('retry-button').addEventListener('click', async () => {
+    await handleStartOrRetry();
 });
 
 // 前の画面に戻るボタン がクリックされたときの処理
 document.getElementById('cancel-button').addEventListener('click', function () {
     const uuid = document.getElementById('confirm-button').getAttribute('data-uuid');
-    window.location.href = '/start/' + uuid; 
+    window.location.href = '/start/' + uuid;
 });
 
-
+// ----------
+// ---各種インスタンスの作成
+// ----------
 const menuList = document.getElementById('menu-list');
 const menuServer = new MenuServer("")
 const menuObjects = new MenuObjects(menuList, menuServer);
-menuObjects.onItemValueChanged = (changedMenuObject) => {
+function onMenuObjectsChanged(changedMenuObject) {
     // ---合計金額を更新する
     const totalPrice = menuObjects.calculateTotalPrice();
     document.getElementById('total-price').textContent = totalPrice.toLocaleString();
 
-    // 栄養素の合計を再計算し、表を更新
+    // ---栄養素の合計を再計算し、表を更新
     const totalNutrition = menuObjects.calculateNutrition();
-    menuObjects.updateNutritionTable(totalNutrition);
+    console.log('totalNutrition:', totalNutrition);
+    const tbody = document.getElementById('nutrition-table-body');
+    tbody.innerHTML = `
+        <tr>
+            <td>${totalNutrition.energy.toFixed(2)}</td>
+            <td>${totalNutrition.protein.toFixed(2)}</td>
+            <td>${totalNutrition.fat.toFixed(2)}</td>
+            <td>${totalNutrition.carbohydrates.toFixed(2)}</td>
+            <td>${totalNutrition.fiber.toFixed(2)}</td>
+            <td>${totalNutrition.vegetables.toFixed(2)}</td>
+        </tr>
+    `;
+}
+
+menuObjects.onItemValueChanged = (changedMenuObject) => {
+    onMenuObjectsChanged(changedMenuObject);
 }
 menuObjects.onItemListChanged = (changedMenuObject) => {
-    // ---合計金額を更新する
-    const totalPrice = menuObjects.calculateTotalPrice();
-    document.getElementById('total-price').textContent = totalPrice.toLocaleString();
-
-    // 栄養素の合計を再計算し、表を更新
-    const totalNutrition = menuObjects.calculateNutrition();
-    menuObjects.updateNutritionTable(totalNutrition);
+    onMenuObjectsChanged(changedMenuObject);
 }
+const bboxesDiv = document.getElementById('bboxesDiv');
+const bboxesObject = new Bboxes(bboxesDiv);
 
 // ----------
 // ---デバッグ用
 // ----------
-new MenuObject(menuObjects, {
-    "display_name": "中 自家製カレー",
-    "jan_code": "2121052120800",
-    "price": 341,
-    "romaji": "homemade_curry",
-    "yolo_name": "homemade_curry",
-    "energy": 1000,
-    "protein": 1000,
-    "fat": 1000,
-    "carbohydrates": 2,
-    "fiber": 3,
-    "vegetables": 4,
-});
-menuObjects.onItemListChanged();
+// new MenuObject(menuObjects, {
+//     "display_name": "塩キャベツサラダ",
+//     "jan_code": "2121052057441",
+//     "price": 66,
+//     "romaji": "SHIO KYABETSU SARADA",
+//     "yolo_name": "salted_cabbage_salad"
+// });
+// new MenuObject(menuObjects, {
+//     "display_name": "中 自家製カレー",
+//     "jan_code": "2121052120800",
+//     "price": 341,
+//     "romaji": "homemade_curry",
+//     "yolo_name": "homemade_curry"
+// });
+// menuObjects.onItemListChanged();
+
 // const testButton = document.getElementById('start-button');
 // testButton.addEventListener('click', async()=>{
 //     // ---メニューキャッシュを取得する
@@ -1210,6 +1531,86 @@ menuObjects.onItemListChanged();
 //     console.log('cache:\n', cache);
 // });
 
+/**
+ * 指定した画像で、推論を開始する
+ * @param {string} base64Image
+ */
+async function startInference(base64Image) {
+    const base64 = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
+    // ---時間を記録する
+    const startTime = performance.now();
+
+    // ---以前のメニューをリセットする
+    menuObjects.resetMenuObjects();
+
+    // ---入力された画像を表示する
+    const detectedImageElement = document.getElementById("detected-image");
+    detectedImageElement.src = 'data:image/jpeg;base64,' + base64;
+    // 画像の読み込みを待つ
+    await new Promise(resolve => detectedImageElement.onload = resolve);
+
+    // ---bboxを表示する
+    // bboxDivの大きさを、画像の大きさに合わせる
+    const bboxesDiv = document.getElementById("bboxesDiv")
+    const detectedImageElementRect = detectedImageElement.getBoundingClientRect();
+    bboxesDiv.style.width = detectedImageElementRect.width + 'px';
+    bboxesDiv.style.height = detectedImageElementRect.height + 'px';
+    bboxesDiv.style.display = 'block';
+
+    // ---推論を開始する
+    const response = await fetch('/start_inference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: base64 })
+    });
+    const json = await response.json();
+
+    // ---検出画像を表示する
+    // document.getElementById("detected-image").src = 'data:image/jpeg;base64,' + json['image'];
+
+    // ---検出結果を表示する
+    for (const box of json['boxes']) {
+        console.log(box);
+        const responseMenuObject = box["menu_object"];
+        if (responseMenuObject && responseMenuObject["display_name"] !== "unknown") {
+            // ---メニューオブジェクトを作成する
+            const menuObject = new MenuObject(menuObjects, responseMenuObject);
+
+            // ---bboxを表示する
+            const bbox = box['xyxy'];
+            const x = bbox[0] * detectedImageElementRect.width;
+            const y = bbox[1] * detectedImageElementRect.height;
+            const w = (bbox[2] - bbox[0]) * detectedImageElementRect.width;
+            const h = (bbox[3] - bbox[1]) * detectedImageElementRect.height;
+            const newBbox = new Bbox(bboxesObject, {
+                x: x,
+                y: y,
+                w: w,
+                h: h,
+            }, menuObject);
+            // ---menuObjectに紐づける
+            menuObject.bbox = newBbox;
+        }
+    }
+
+    // 処理が完了したタイムスタンプを取得し、時間を表示する
+    const endTime = performance.now();  // 終了時間
+    const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
+    document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
+
+    // ---[JPHacks用]音声を再生する
+    const voiceText = json['voice']["text"];
+    document.getElementById('payment-message').innerHTML = voiceText;
+
+    const voiceWav = json['voice']["base64"];
+    const voiceBase64 = `data:audio/wav;base64,${voiceWav}`;
+    const audio = new Audio(voiceBase64);
+    audio.play();
+
+}
+
+
+// ---[デバッグ用]toreアイコンをクリックしたとき、ファイルから推論を開始する
 const debugButton = document.getElementById('debugButton');
 debugButton.addEventListener('click', async () => {
     // ---ファイルから推論する
@@ -1222,66 +1623,33 @@ debugButton.addEventListener('click', async () => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
         reader.onload = async () => {
-            const base64 = reader.result.split(',')[1];
-            // ---時間を記録する
-            const startTime = performance.now();
-
-            // ---以前のメニューをリセットする
-            menuObjects.resetMenuObjects();
-
-            // ---入力された画像を表示する
-            const detectedImageElement = document.getElementById("detected-image");
-            detectedImageElement.src = 'data:image/jpeg;base64,' + base64;
-            // 画像の読み込みを待つ
-            await new Promise(resolve => detectedImageElement.onload = resolve);
-
-            // ---bboxを表示する
-            // TODO
-            // bboxDivの大きさを、画像の大きさに合わせる
-            const bboxDiv = document.getElementById("bboxDiv")
-            const detectedImageElementRect = detectedImageElement.getBoundingClientRect();
-            bboxDiv.style.width = detectedImageElementRect.width + 'px';
-            bboxDiv.style.height = detectedImageElementRect.height + 'px';
-            bboxDiv.style.display = 'block';
-
-            // ---推論を開始する
-            const response = await fetch('/start_inference', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ image: base64 })
-            });
-            const json = await response.json();
-
-            // ---検出画像を表示する
-            document.getElementById("detected-image").src = 'data:image/jpeg;base64,' + json['image'];
-
-            // ---検出結果を表示する
-            for (const item of json['items']) {
-                console.log(item);
-                if (item["display_name"] !== "unknown") {
-                    const menuObject = new MenuObject(menuObjects, {
-                        display_name: item.display_name,
-                        romaji: item.romaji,
-                        yolo_name: item.yolo_name,
-                        jan_code: item.jan_code,
-                        price: item.price,
-                        // 栄養価情報を明示的に渡す
-                        energy: Number(item.energy) || 0,
-                        protein: Number(item.protein) || 0,
-                        fat: Number(item.fat) || 0,
-                        carbohydrates: Number(item.carbohydrates) || 0,
-                        fiber: Number(item.fiber) || 0,
-                        vegetables: Number(item.vegetables) || 0
-                    });
-                    console.log('Created MenuObject:', menuObject);  // デバッグログ追加
-                }
-            }
-
-            // 処理が完了したタイムスタンプを取得し、時間を表示する
-            const endTime = performance.now();  // 終了時間
-            const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
-            document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
+            const base64Image = reader.result;
+            await startInference(base64Image);
         }
     });
 
 });
+
+// ---[デバッグ用]右クリックで、いろいろやる
+
+document.addEventListener('contextmenu', (e) => {
+    // console.log('menuObjects:', menuObjects);
+    // console.log('bboxesObject:', bboxesObject);
+    // 「/static/あたりなのだ.wav」を再生する
+
+    toggleZundamon = !toggleZundamon;
+    if (toggleZundamon) {
+        omedetou()
+    }
+});
+// ---ずんだもん無限再生
+let toggleZundamon = false
+function omedetou() {
+    const audio = new Audio('/static/おめでとうなのだ.wav');
+    audio.play();
+    audio.addEventListener('ended', () => {
+        if (toggleZundamon) {
+            omedetou()
+        }
+    });
+}

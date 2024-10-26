@@ -36,11 +36,9 @@
     <div id="content" class="container">
         <div class="main">
             <div class="left">
-                <!-- 栄養表示のため，画像を表示する枠のサイズを変更 -->
-                <div id="imageDiv" style="width: 600px; height: 400px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                    <div id="bboxDiv">
+                <div id="imageDiv">
+                    <div id="bboxesDiv">
                         <!-- ここにbboxが入る -->
-                         <p>わわあ</p>
                     </div>
                     <img id="detected-image" src="" alt="検出結果画像" style="max-width: 100%; max-height: 100%; object-fit: cover;">
                 </div>
@@ -101,6 +99,7 @@
         </div>
     </div>
     <!-- スクリプト -->
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script> <!-- ドラッグアンドドロップ用のスクリプト(InteractJS) -->
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- SocketIO用のスクリプト -->
     <script src="/static/scripts_index.js"></script>
 </body>
