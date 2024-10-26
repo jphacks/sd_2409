@@ -60,6 +60,7 @@ class LabelMeData:
         labelmedata_json = json.dumps(
             self_object,
             indent=4,
+            ensure_ascii=False,
         )
         with open(save_path, "w") as f:
             f.write(labelmedata_json)
