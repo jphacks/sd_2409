@@ -795,6 +795,13 @@ class Bbox {
                 onmove: (event) => {
                     this.x += event.dx;
                     this.y += event.dy;
+                    // ---移動範囲の制限
+                    if (this.x < 0) this.x = 0;
+                    if (this.y < 0) this.y = 0;
+                    if(this.parentBboxes){
+                        if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.x = this.parentBboxes.rootElement.clientWidth - this.w;
+                        if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.y = this.parentBboxes.rootElement.clientHeight - this.h;
+                    }
                     this.update();
                 }
             })
@@ -803,6 +810,13 @@ class Bbox {
                 onmove: (event) => {
                     this.w += event.dx;
                     this.h += event.dy;
+                    // ---サイズの制限
+                    if (this.w < 0) this.w = 0;
+                    if (this.h < 0) this.h = 0;
+                    if(this.parentBboxes){
+                        if (this.x + this.w > this.parentBboxes.rootElement.clientWidth) this.w = this.parentBboxes.rootElement.clientWidth - this.x;
+                        if (this.y + this.h > this.parentBboxes.rootElement.clientHeight) this.h = this.parentBboxes.rootElement.clientHeight - this.y;
+                    }
                     this.update();
                 }
             })
