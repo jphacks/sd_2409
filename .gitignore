@@ -171,6 +171,7 @@ static/images/
 output/
 
 tore/
+menu_cache.json
 
 # macOS
 .DS_Store
