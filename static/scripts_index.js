@@ -722,6 +722,163 @@ document.getElementById('add-button').addEventListener('click', () => {
     document.getElementById('add-menu-form').style.display = 'block'; // フォームを表示
 });
 
+/**
+ * bboxオブジェクトのパラメータクラス
+ * @typedef {Object} BboxParameters
+ * @property {number} x bboxのx座標
+ * @property {number} y bboxのy座標
+ * @property {number} w bboxの幅
+ * @property {number} h bboxの高さ
+ * @property {MenuObject|undefined} menuObject bboxに紐づいているメニューオブジェクト
+ */
+
+/**
+ * bboxのDOM要素を表現するクラス
+ * @typedef {Object} BboxElements
+ * @property {HTMLDivElement} bboxDivElement bboxのdiv要素
+ * @property {HTMLSpanElement} bboxSpanElement bboxのspan要素
+ */
+
+class Bbox{
+    /**
+     * bboxオブジェクトのクラス
+     * @param {BboxParameters} parameters
+     */
+    constructor(parentBboxes=undefined, parameters={}){
+        /**@type {number} bboxのx座標*/
+        this.x = parameters.x;
+        /**@type {number} bboxのx座標*/
+        this.y = parameters.y;
+        /**@type {number} bboxの幅*/
+        this.w = parameters.w;
+        /**@type {number} bboxの高さ*/
+        this.h = parameters.h;
+        /**@type {MenuObject|undefined} bboxに紐づいているメニューオブジェクト*/
+        this.menuObject = parameters.menuObject; // bboxに紐づいているメニューオブジェクト
+        /**@type {bboxes|undefined} bboxを管理するbboxesオブジェクト*/
+        this.parentBboxes = parentBboxes; // bboxを管理するbboxesオブジェクト
+        /**@type {BboxElements} bboxの表示用DOM要素*/
+        this.elements = this.createElement();
+        this.update();
+        if(this.parentBboxes){
+            this.parentBboxes.addBbox(this);
+        }
+    }
+
+    // ----------
+    // ---HTMLElementの管理系
+    // ----------
+
+    createElement(){
+        /*
+        これをつくる
+        <div class="bboxDiv">
+            <span class="bboxSpan">{メニュー名}</span>
+        </div>
+        */
+
+        // ----------
+        // ---要素の作成
+        // ----------
+        const bboxDivElement= document.createElement('div');
+        bboxDivElement.classList.add('bboxDiv');
+
+        const bboxSpanElement = document.createElement('span');
+        bboxSpanElement.classList.add('bboxSpan');
+        bboxDivElement.appendChild(bboxSpanElement);
+
+
+        // ----------
+        // ---interactjsの設定
+        // ----------
+        interact(bboxDivElement)
+            .draggable({
+                onmove: (event) => {
+                    this.x += event.dx;
+                    this.y += event.dy;
+                    this.update();
+                }
+            })
+            .resizable({
+                edges: { left: true, right: true, bottom: true, top: true },
+                onmove: (event) => {
+                    this.w += event.dx;
+                    this.h += event.dy;
+                    this.update();
+                }
+            })
+            .on('doubletap', () => {
+                this.delete();
+            });
+
+        // ---表示の更新
+        console.log(this.menuObject);
+
+        // ---返却
+        return {
+            bboxDivElement,
+            bboxSpanElement
+        }
+    }
+
+    update(){
+        // ---spanに表示するラベルの更新
+        console.log(this.menuObject.display_name);
+        this.elements.bboxSpanElement.textContent = this.menuObject.display_name;
+
+        // ---divの位置とサイズの更新
+        this.elements.bboxDivElement.style.left = `${this.x}px`;
+        this.elements.bboxDivElement.style.top = `${this.y}px`;
+        this.elements.bboxDivElement.style.width = `${this.w}px`;
+        this.elements.bboxDivElement.style.height = `${this.h}px`;
+
+    }
+
+    setValue(parameter){
+
+        this.update();
+    }
+
+    delete(){
+        // ---親のリストから削除してもらう
+        if (this.parentBboxes) {
+            this.parentBboxes.deleteBbox(this);
+        }
+
+    }
+
+}
+
+class Bboxes{
+    constructor(rootElement){
+        /**@type {HTMLElement} bboxリストを入れ込む要素*/
+        this.rootElement = rootElement;
+        /**@type {Bbox[]} bboxのリスト*/
+        this.bboxes = [];
+        /**@type {(changedBbox: Bbox) => void} リスト内bboxの値が変更されたときのコールバック*/
+        this.onItemListChanged = (changedBbox) => { };
+    }
+
+    // ----------
+    // ---リスト操作
+    // ----------
+    addBbox(bbox){
+        // ---親を設定
+        bbox.parentBboxes = this;
+        // ---リストに追加
+        this.bboxes.push(bbox);
+        // ---要素を表示する
+        this.rootElement.appendChild(bbox.elements.bboxDivElement);
+        // ---コールバックを実行
+        this.onItemListChanged(bbox);
+    }
+    deleteBbox(bbox){
+        // ---フィルターで削除
+        this.bboxes = this.bboxes.filter(obj => obj !== bbox);
+        // ---コールバックを実行
+        this.onItemListChanged(bbox);
+    }
+}
 
 // ----------
 // ---手入力フォーム入力から、メニュー検索と表示を行う
@@ -974,7 +1131,9 @@ document.getElementById('cancel-button').addEventListener('click', function () {
     window.location.href = '/start/' + uuid; 
 });
 
-
+// ----------
+// ---各種インスタンスの作成
+// ----------
 const menuList = document.getElementById('menu-list');
 const menuServer = new MenuServer("")
 const menuObjects = new MenuObjects(menuList, menuServer);
@@ -988,6 +1147,8 @@ menuObjects.onItemListChanged = (changedMenuObject) => {
     const totalPrice = menuObjects.calculateTotalPrice();
     document.getElementById('total-price').textContent = totalPrice.toLocaleString();
 }
+const bboxesDiv = document.getElementById('bboxesDiv');
+const bboxesObject = new Bboxes(bboxesDiv);
 
 // ----------
 // ---デバッグ用
@@ -1053,11 +1214,11 @@ debugButton.addEventListener('click', async () => {
             // ---bboxを表示する
             // TODO
             // bboxDivの大きさを、画像の大きさに合わせる
-            const bboxDiv = document.getElementById("bboxDiv")
+            const bboxesDiv = document.getElementById("bboxesDiv")
             const detectedImageElementRect = detectedImageElement.getBoundingClientRect();
-            bboxDiv.style.width = detectedImageElementRect.width + 'px';
-            bboxDiv.style.height = detectedImageElementRect.height + 'px';
-            bboxDiv.style.display = 'block';
+            bboxesDiv.style.width = detectedImageElementRect.width + 'px';
+            bboxesDiv.style.height = detectedImageElementRect.height + 'px';
+            bboxesDiv.style.display = 'block';
 
             // ---推論を開始する
             const response = await fetch('/start_inference', {
@@ -1071,10 +1232,27 @@ debugButton.addEventListener('click', async () => {
             document.getElementById("detected-image").src = 'data:image/jpeg;base64,' + json['image'];
 
             // ---検出結果を表示する
-            for (const item of json['items']) {
-                console.log(item);
-                if (item["display_name"] !== "unknown") {
-                    const menuObject = new MenuObject(menuObjects, item);
+            for (const box of json['boxes']) {
+                console.log(box);
+                const responseMenuObject=box["menu_object"];
+                if (responseMenuObject["display_name"] !== "unknown") {
+                    // ---メニューオブジェクトを作成する
+                    const menuObject = new MenuObject(menuObjects, responseMenuObject);
+                    
+                    // ---bboxを表示する
+                    const bbox = box['xyxy'];
+                    const x = bbox[0] * detectedImageElementRect.width;
+                    const y = bbox[1] * detectedImageElementRect.height;
+                    const w = (bbox[2] - bbox[0]) * detectedImageElementRect.width;
+                    const h = (bbox[3] - bbox[1]) * detectedImageElementRect.height;
+                    const newBbox = new Bbox(bboxesObject, {
+                        x: x,
+                        y: y,
+                        w: w,
+                        h: h,
+                        menuObject: menuObject
+                    });
+                    bboxesObject.addBbox(newBbox);
                 }
             }
 
