@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, render_template, redirect, url_for, session, jsonify, request 
 from flask_socketio import SocketIO, emit, join_room
 from flask_cors import CORS
@@ -10,6 +11,7 @@ import json
 
 from Yolov9Wrapper.Yolov9Wrapper import Yolov9
 from incomings.variables import EnvVariables
+from modules.Logging import log_as_labelme
 from modules.MenuCache import MenuCache
 from modules.inference import inference_osara_shohin
 from modules.menu import Menu
@@ -47,7 +49,12 @@ menu_all.load_menu(MENU_CSV,encoding)
 
 # ---最近入力されたメニューの読み込み
 menu_cache=MenuCache()
-menu_cache.import_from_json("menu_cache.json")
+if os.path.exists("menu_cache.json"):
+    menu_cache.import_from_json("menu_cache.json")
+else:
+    # ---menu_cache.jsonが存在しない場合は空のリストを作成
+    with open('menu_cache.json', 'w', encoding='utf-8') as f:
+        f.write("[\n]")
 
 # ---モデルの読み込み
 MODEL_OSARA=Yolov9(MODEL_OSARA_WEIGHT,device=DEVICE)
@@ -64,7 +71,13 @@ uuid_list = {
     "2234": "b"
 }
 
-#20241018　町田追加
+
+# ---[Logging]保存先ディレクトリを用意する
+# 今日の日付のディレクトリを作成
+today = datetime.now().strftime("%Y%m%d")
+TODAY_LOGGING_DIR = os.path.join("Logging", today)
+os.makedirs(TODAY_LOGGING_DIR, exist_ok=True)
+
 ###############################################
 ##          loginテンプレートの読み込み        ##
 ###############################################
@@ -286,13 +299,8 @@ def add_menu_cache():
     # ---追加後のメニューキャッシュを取得
     cache = menu_cache.get_cache()
 
-    # -------------------------------------Debug用ここから
-    # ---メニューキャッシュ書き出し
-    # menu_cache.export_as_json("menu_cache.json")
-    # # 修正部分: JSONを書き出す際に、インデント付きで保存する
-    # with open("menu_cache.json", 'w', encoding='utf-8') as f:
-    #     json.dump(menu_cache.get_cache(), f, ensure_ascii=False, indent=4)  
-    # -------------------------------------Debug用ここまで
+    # ---[デバッグ用]メニューキャッシュをファイルに書き出す
+    menu_cache.export_as_json("menu_cache.json")
 
     # ---レスポンスを返す
     return jsonify({
@@ -336,6 +344,44 @@ def remove_menu_cache():
     return jsonify({
         'cache': cache
     })
+
+# ----------
+# ---最終的な結果をログに保存するAPI
+# ----------
+@app.route('/logging', methods=['POST'])
+def logging():
+    """最終的な結果をログに保存するAPI
+    
+    - リクエスト仕様
+        - エンドポイント: /logging
+        - メソッド: POST
+        - パラメータ:
+            - items: 検出されたメニューアイテムのリスト
+            - total: 合計金額
+    
+    - レスポンス仕様
+        - レスポンス形式: application/json
+        - レスポンスデータ:
+            - success: 成功したかどうか
+    """
+    """
+    なにを受けるか？
+    - 画像データ
+    - item
+        - ラベル
+        - xyxy
+    """
+    
+    
+    # ---リクエストデータを取得
+    request_data = request.json
+    image_base64 = request_data.get('image')
+    items = request_data.get('items')
+    
+    # ---ログに保存する処理を書く
+    log_as_labelme(image_base64, items, TODAY_LOGGING_DIR)
+    
+    return jsonify({'success': True})
 
 ########################################################
 ##        　　　　　Pythonリクエスト関連　               ##
@@ -405,4 +451,3 @@ if __name__ == '__main__':
         port=7500, 
         ssl_context=(SSL_CRT, SSL_KEY)
     )
-    

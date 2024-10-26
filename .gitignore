@@ -172,6 +172,7 @@ output/
 
 tore/
 menu_cache.json
+Logging/
 
 # macOS
 .DS_Store

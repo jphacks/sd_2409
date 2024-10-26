@@ -1154,6 +1154,22 @@ document.getElementById('confirm-button').addEventListener('click', async functi
         'jan_codes': menuObjects.getJanCodes()
     });
 
+    // ---最終的な結果(アノテーションなど)をログ用APIに送る
+    // ---画像を取り出す
+    const detectImageElement = document.getElementById('detected-image');
+    const imageBase64 = detectImageElement.src;
+    await fetch("logging", {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            "image": imageBase64,
+            "items": bboxesObject.bboxes.map(bbox => ({
+                "label": bbox.getBboxParameters().menu_object.display_name,
+                "xyxy": bbox.getBboxParameters().xyxy,
+            }))
+        })
+    })
+
     // ---メニューリストを取得する
     // const selectedMenus = menuObjects.menuObjects.map(menuObject => menuObject.getMenuObjectParameters());
 
