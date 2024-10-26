@@ -50,7 +50,7 @@ class Menu:
                     fat_column = field
                 elif "炭水化物" in field:
                     carbohydrates_column = field
-                elif "食物繊維" in field:
+                elif "食塩相当量" in field:
                     fiber_column = field
                 elif "野菜量" in field:
                     vegetables_column = field
