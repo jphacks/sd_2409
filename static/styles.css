@@ -245,6 +245,8 @@ body {
   border: 2px solid #ddd;        /* ボーダーを追加して視覚的に区別 */
   border-radius: 0.5vw;            /* 角を丸めて柔らかい印象に */
   transition: background-color 0.3s ease; /* ホバー時の背景色変化をアニメーションで */
+  transition: border-color 0.3s ease; /* ボーダー色変化をアニメーションで */
+  transition: box-shadow 0.3s ease; /* 影の変化をアニメーションで */
 }
 #menu-list rt { /* メニューのルビ(ローマ字) */
   font-size: 0.7em;   
@@ -347,7 +349,7 @@ body {
   border: 0.2vw solid #ccc;      /* ボーダーのスタイル */
   border-radius: 0.8vw;          /* 角を丸くする */
   padding: 1vw;                 
-  width: 100%;                   /* 親要素に合わせた幅 */
+  width: fit-content;                   /* 親要素に合わせた幅 */
   box-sizing: border-box;        /* パディングやボーダーを含めた幅にする */
   cursor: pointer;               /* ポインタカーソルを表示 */
   z-index: 100;                  /* ドロップダウンメニューを前面に表示 */
