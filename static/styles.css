@@ -11,6 +11,8 @@ body {
   gap: 1vw;
   color: #333;
   user-select: none; /* 文字選択禁止 */
+  /* ChatGPTに作ってもらったソフトグラデーション。えもい。 */
+  background: linear-gradient(135deg, #f5f7fa 40%, #e2e8f0 70%, #c3cfe2);
 }
 .container {
   display: flex;
@@ -36,7 +38,8 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #e0e0e0;
+  /* background-color: #e0e0e0; */
+  background: linear-gradient(135deg, #e5e5e5 20%, #c2c5c9 50%, #a3a6aa);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -312,7 +315,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1vw;
-  background-color: #f9f9f9;
+  /* background-color: #f9f9f9; */
   box-shadow: 0 0.2vw 0.4vw rgba(0, 0, 0, 0.2);
 }
 .bottom__left {
