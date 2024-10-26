@@ -926,15 +926,15 @@ class Bbox {
     getBboxParameters() {
         if (!this.parentBboxes) return;
         // ---画面サイズ座標を取得
-        topleftX = this.x;
-        topleftY = this.y;
-        bottomrightX = this.x + this.w;
-        bottomrightY = this.y + this
+        const topleftX = this.x;
+        const topleftY = this.y;
+        const bottomrightX = this.x + this.w;
+        const bottomrightY = this.y + this.h;
         // ---画面サイズ座標を正規化して返す
-        normarized_topleftX = topleftX / this.parentBboxes.rootElement.clientWidth;
-        normarized_topleftY = topleftY / this.parentBboxes.rootElement.clientHeight;
-        normarized_bottomrightX = bottomrightX / this.parentBboxes.rootElement.clientWidth;
-        normarized_bottomrightY = bottomrightY / this.parentBboxes.rootElement.clientHeight;
+        const normarized_topleftX = topleftX / this.parentBboxes.rootElement.clientWidth;
+        const normarized_topleftY = topleftY / this.parentBboxes.rootElement.clientHeight;
+        const normarized_bottomrightX = bottomrightX / this.parentBboxes.rootElement.clientWidth;
+        const normarized_bottomrightY = bottomrightY / this.parentBboxes.rootElement.clientHeight;
 
         return {
             "xyxy": [normarized_topleftX,
@@ -1158,17 +1158,20 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     // ---画像を取り出す
     const detectImageElement = document.getElementById('detected-image');
     const imageBase64 = detectImageElement.src;
-    await fetch("logging", {
+    await fetch("/logging", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             "image": imageBase64,
             "items": bboxesObject.bboxes.map(bbox => ({
-                "label": bbox.getBboxParameters().menu_object.display_name,
+                "label": bbox.getBboxParameters().menu_object.menu_code,
                 "xyxy": bbox.getBboxParameters().xyxy,
             }))
-        })
+        })  
     })
+
+    // await wait(1000); // 何となく1秒待つ
+    // window.location.href = '/start/' + uuid; // 前画面に戻る
 
     // ---メニューリストを取得する
     // const selectedMenus = menuObjects.menuObjects.map(menuObject => menuObject.getMenuObjectParameters());
@@ -1202,9 +1205,6 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     //     .catch(error => {
     //         console.error('注文の確定に失敗しました:', error);
     //     });  
-
-    await wait(1000); // 何となく1秒待つ
-    window.location.href = '/start/' + uuid; // 前画面に戻る
 });
 
 ////////////////////////////////////////
@@ -1404,7 +1404,6 @@ async function startInference(base64Image) {
                 w: w,
                 h: h,
             }, menuObject);
-            bboxesObject.addBbox(newBbox);
             // ---menuObjectに紐づける
             menuObject.bbox = newBbox;
         }
