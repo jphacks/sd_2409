@@ -152,8 +152,8 @@ def start_inference():
     annotated_image=inference_result['image']
     if annotated_image is None:
         return jsonify({'error': 'Failed to grab frame from webcam'}), 500
-    menu_objects=menu_all.find_menu_by_OsaraShohinResult(inference_result)
-    # annotated_image, detected_items, total_price = run_inference_and_annotate(frame) 
+    # menu_objects=menu_all.find_menu_by_OsaraShohinResult(inference_result)
+    new_osresult=menu_all.find_menu_by_OsaraShohinResult(inference_result)
     
     # [デバッグ用]検出画像を保存する
     cv2.imwrite('output/detected_image.jpg', annotated_image)
@@ -166,17 +166,20 @@ def start_inference():
     image_base64 = base64.b64encode(buffer).decode('utf-8')
     
     # `detected_items` がリストであることを確認し、空なら空リストにする
-    menu_objects = menu_objects if menu_objects else []
+    # menu_objects = menu_objects if menu_objects else []
     
     # ---合計金額を計算
     total_price = 0
-    for item in menu_objects:
-        total_price += item['price']
+    for box in new_osresult['boxes']:
+        menu_object = box['menu_object']
+        total_price += menu_object['price']
     
     # ---レスポンスを返す
+    # OsaraShohinResultとほぼ同じ形式で返す
     return jsonify({
         'image': image_base64,
-        'items': menu_objects,
+        "boxes": new_osresult["boxes"],
+        # 'items': menu_objects,
         'total': total_price
     })
 
