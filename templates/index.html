@@ -36,12 +36,13 @@
     <div id="content" class="container">
         <div class="main">
             <div class="left">
-                <div id="imageDiv">
+                <!-- 栄養表示のため，画像を表示する枠のサイズを変更 -->
+                <div id="imageDiv" style="width: 600px; height: 400px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; overflow: hidden;">
                     <div id="bboxDiv">
                         <!-- ここにbboxが入る -->
                          <p>わわあ</p>
                     </div>
-                    <img id="detected-image" src="" alt="検出結果画像">
+                    <img id="detected-image" src="" alt="検出結果画像" style="max-width: 100%; max-height: 100%; object-fit: cover;">
                 </div>
             </div>
             <div class="right">
@@ -71,8 +72,23 @@
         </div>
         <div class="bottom">
             <div class="bottom__left">
-                <div id="payment-message">
-                </div>
+                <div id="payment-message"></div>
+                 <!-- 栄養情報の表 -->
+                <table id="nutrition-table" style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr>
+                            <th>エネルギー (kcal)</th>
+                            <th>タンパク質 (g)</th>
+                            <th>脂質 (g)</th>
+                            <th>炭水化物 (g)</th>
+                            <th>食物繊維 (g)</th>
+                            <th>野菜量 (mg)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nutrition-table-body">
+                        <!-- JavaScriptでデータが挿入される -->
+                    </tbody>
+                </table>
             </div>
             <div class="bottom__right">
                 <div id="total">

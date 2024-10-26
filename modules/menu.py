@@ -17,28 +17,20 @@ class Menu:
     def load_menu(
         self, csv_file_path: str, csv_encoding: str = "utf-8"
     ) -> dict[str, MenuObject]:
-        """ "CSVファイルからメニューを読み込み、self.menuに格納する
+        """ CSVファイルからメニューを読み込み、self.menuに格納する
 
         Returns:
             menu: メニュー情報を保持する辞書。以下のような形式(MenuObject)で保持される。
             {
-                'メニューコード': {'jan_code': 'JANコード', 'display_name': '表示名', 'romaji': 'ローマ字', 'price': 価格},
+                'メニューコード': {'jan_code': 'JANコード', 'display_name': '表示名', 'romaji': 'ローマ字', 'price': 価格, 
+                'energy': 'エネルギー', 'protein': 'タンパク質', 'fat': '脂質', 'carbohydrates': '炭水化物', 'fiber': '食物繊維', 'vegetables': '野菜量', 'yolo_name': 検出名, },
                 ...
             }
         """
-        menu: dict[str, MenuObject] = {}  # メニュー情報を保持する辞書
-        # 料理マスタ.csv(menu.csv)を読み込む
+        menu: dict[str, MenuObject] = {}
         with open(csv_file_path, mode="r", encoding=csv_encoding) as csvfile:
-            reader = csv.DictReader(csvfile)  # CSVの1行目をキーとして扱う
-            # janコード、display_name、priceの列インデックスを探す
-            menu_code_column = None
-            jan_code_column = None
-            display_name_column = None
-            romaji_column = None
-            price_column = None
-            yoloname_column = None
-
-            # ヘッダー（列名）を確認し、必要な列を特定
+            reader = csv.DictReader(csvfile)
+            # ヘッダーから列名を特定
             for field in reader.fieldnames:
                 if "料理コード" in field:
                     menu_code_column = field
@@ -50,37 +42,50 @@ class Menu:
                     romaji_column = field
                 elif "販売価格(税込)" in field:
                     price_column = field
+                elif "エネルギー" in field:
+                    energy_column = field
+                elif "タンパク質" in field:
+                    protein_column = field
+                elif "脂質" in field:
+                    fat_column = field
+                elif "炭水化物" in field:
+                    carbohydrates_column = field
+                elif "食物繊維" in field:
+                    fiber_column = field
+                elif "野菜量" in field:
+                    vegetables_column = field
                 elif "検出名" in field:
                     yoloname_column = field
 
-            # 必要な列が見つかったか確認
             if not (
                 menu_code_column
                 and jan_code_column
                 and display_name_column
                 and romaji_column
                 and price_column
+                and energy_column
+                and protein_column
+                and fat_column
+                and carbohydrates_column
             ):
                 raise ValueError(
-                    "必要な列（janコード、お客様向け名称、販売価格(税込)etc）が見つかりませんでした。"
+                    "必要な列が見つかりませんでした。"
                 )
 
-            # CSVの各行を読み込み、janコードをキーとしてメニューを作成
             for row in reader:
-                # if(row[yoloname_column] != ""): # yoloモデルの学習名が自作の場合
-                #     menu_code = row[yoloname_column].strip()
-                # else:
-                #     menu_code = row[menu_code_column].strip()
-
-                # ---各値を取得する
                 menu_code = str(int(row[menu_code_column].strip()))
                 display_name = row[display_name_column].strip()
                 romaji = row[romaji_column].strip()
-                yolo_name = row[yoloname_column].strip()
                 jan_code = row[jan_code_column].strip()
                 price = int(row[price_column].strip())
+                energy = row[energy_column].strip()
+                protein = row[protein_column].strip() 
+                fat = row[fat_column].strip() 
+                carbohydrates = row[carbohydrates_column].strip() 
+                fiber = row[fiber_column].strip() 
+                vegetables = row[vegetables_column].strip() 
+                yolo_name = row[yoloname_column].strip() if yoloname_column else ""
 
-                # ---メニュー情報dictに追加する
                 menu[menu_code] = {
                     "menu_code": menu_code,
                     "display_name": display_name,
@@ -88,9 +93,14 @@ class Menu:
                     "yolo_name": yolo_name,
                     "jan_code": jan_code,
                     "price": price,
+                    "energy": energy,
+                    "protein": protein,
+                    "fat": fat,
+                    "carbohydrates": carbohydrates,
+                    "fiber": fiber,
+                    "vegetables": vegetables,
                 }
 
-        # print(f"\n\n\nロードしたメニュー数: {len(menu)}")
         self.menu = menu
 
     def find_menu_by_OsaraShohinResult(

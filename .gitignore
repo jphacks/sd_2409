@@ -187,3 +187,6 @@ ehthumbs_vista.db
 
 # Windows shortcuts
 *.lnk
+
+#仮想環境
+sd_2409/

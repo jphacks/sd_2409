@@ -338,6 +338,14 @@ class MenuObject {
         /**@type {number} 価格*/
         this.price = parameters.price ?? 0;
 
+        // 栄養価関連のプロパティを追加
+        this.energy = parameters.energy ?? 0;
+        this.protein = parameters.protein ?? 0;
+        this.fat = parameters.fat ?? 0;
+        this.carbohydrates = parameters.carbohydrates ?? 0;
+        this.fiber = parameters.fiber ?? 0;
+        this.vegetables = parameters.vegetables ?? 0;
+
         /**@type {boolean} ドロップダウンメニューが開いているかどうか*/
         this.isSelectOpen = false;
 
@@ -521,6 +529,14 @@ class MenuObject {
         this.jan_code = parameters.jan_code ?? this.jan_code;
         this.price = parameters.price ?? this.price;
 
+        // 栄養価の更新を追加
+        this.energy = parameters.energy ?? this.energy;
+        this.protein = parameters.protein ?? this.protein;
+        this.fat = parameters.fat ?? this.fat;
+        this.carbohydrates = parameters.carbohydrates ?? this.carbohydrates;
+        this.fiber = parameters.fiber ?? this.fiber;
+        this.vegetables = parameters.vegetables ?? this.vegetables;
+
         this.update();
         this.parentMenuObjects.onItemValueChanged(this);
     }
@@ -548,7 +564,13 @@ class MenuObject {
             romaji: this.romaji,
             yolo_name: this.yolo_name,
             jan_code: this.jan_code,
-            price: this.price
+            price: this.price,
+            energy: this.energy,
+            protein: this.protein,
+            fat: this.fat,
+            carbohydrates: this.carbohydrates,
+            fiber: this.fiber,
+            vegetables: this.vegetables
         };
     }
 }
@@ -714,6 +736,52 @@ class MenuObjects {
     calculateTotalPrice() {
         return this.menuObjects.reduce((sum, menuObject) => sum + menuObject.price, 0);
     }
+
+    /**栄養の合計値を計算し，表を表示する関数
+     * @returns {object} 栄養の合計
+     */
+    calculateNutrition() {
+        // 栄養素の合計値を保持するオブジェクト
+        const totalNutrition = {
+            energy: 0,
+            protein: 0,
+            fat: 0,
+            carbohydrates: 0,
+            fiber: 0,
+            vegetables: 0,
+        };
+
+        // 各メニューオブジェクトをループして栄養素を加算
+        for (const menuObject of this.menuObjects) {
+            //totalNutrition.energy += parseFloat(menuObject.energy) || menuObject.energy;
+            totalNutrition.energy += menuObject.energy;
+            console.log(menuObject.price)
+            totalNutrition.protein += parseFloat(menuObject.protein) || 0;
+            totalNutrition.fat += parseFloat(menuObject.fat) || 0;
+            totalNutrition.carbohydrates += parseFloat(menuObject.carbohydrates) || 0;
+            totalNutrition.fiber += parseFloat(menuObject.fiber) || 0;
+            totalNutrition.vegetables += parseFloat(menuObject.vegetables) || 0;
+        }
+
+        return totalNutrition;
+    }
+
+    /**栄養情報の表を更新する関数
+     * @param {object} nutrition 栄養素の合計
+     */
+    updateNutritionTable(nutrition) {
+        const tbody = document.getElementById('nutrition-table-body');
+        tbody.innerHTML = `
+            <tr>
+                <td>${nutrition.energy.toFixed(2)}</td>
+                <td>${nutrition.protein.toFixed(2)}</td>
+                <td>${nutrition.fat.toFixed(2)}</td>
+                <td>${nutrition.carbohydrates.toFixed(2)}</td>
+                <td>${nutrition.fiber.toFixed(2)}</td>
+                <td>${nutrition.vegetables.toFixed(2)}</td>
+            </tr>
+        `;
+    }
 }
 
 // "追加" ボタンがクリックされたときにフォームを表示
@@ -722,6 +790,12 @@ document.getElementById('add-button').addEventListener('click', () => {
     document.getElementById('add-menu-form').style.display = 'block'; // フォームを表示
 });
 
+// 一定時間待つ関数
+async function wait(ms) {
+    return new Promise(resolve => {
+        setTimeout(resolve, ms);
+    });
+}
 
 // ----------
 // ---手入力フォーム入力から、メニュー検索と表示を行う
@@ -833,7 +907,10 @@ manualInputAddButton.addEventListener('click', () => {
     handleMenuInput(menuNameInput, menuPriceInput, manualInputDatalist, false);
 });
 
-
+// 一定時間待つ関数
+async function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 var socket = io(); // Socket.IOの初期化
 
@@ -841,6 +918,30 @@ var socket = io(); // Socket.IOの初期化
 ///         確定ボタンクリック時         ///////
 ////////////////////////////////////////
 document.getElementById('confirm-button').addEventListener('click', async function () {
+    // 栄養情報を模擬データとして設定（実際はAPIから取得）
+    const nutritionData = [
+        { energy: 200, protein: 10, fat: 5, carbs: 30, fiber: 2, vegetable: 50 },
+        { energy: 400, protein: 20, fat: 10, carbs: 60, fiber: 4, vegetable: 100 },
+        { energy: 600, protein: 30, fat: 15, carbs: 90, fiber: 6, vegetable: 150 }
+    ];
+
+    // 栄養情報をテーブルに追加
+    const tbody = document.getElementById('nutrition-table-body');
+    tbody.innerHTML = ''; // 既存の内容をクリア
+
+    nutritionData.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${item.energy}</td>
+            <td>${item.protein}</td>
+            <td>${item.fat}</td>
+            <td>${item.carbs}</td>
+            <td>${item.fiber}</td>
+            <td>${item.vegetable}</td>
+        `;
+        tbody.appendChild(row);
+    });
+    
     const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
     const isHit = Math.random() < hitProbability; // あたりかどうかの判定
 
@@ -932,9 +1033,8 @@ document.getElementById('confirm-button').addEventListener('click', async functi
         'jan_codes': menuObjects.getJanCodes()
     });
 
-    // 1秒待機後に画面遷移
-    await wait(1000);
-    window.location.href = '/start/' + uuid;
+    await wait(3000); // 何となく1秒待つ->栄養情報の表示のため，ハッカソン用に3秒に変更．(町田)
+    window.location.href = '/start/' + uuid; // 前画面に戻る
 
 
 
@@ -972,11 +1072,6 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     //     });  
     
 });
-
-// 一定時間待つ関数
-async function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-}
 
 ////////////////////////////////////////
 ///  カメラを起動し、画像をbase64で返す   ///
@@ -1036,13 +1131,6 @@ function captureImage() {
     });
 }
 
-// 一定時間待つ関数
-async function wait(ms) {
-    return new Promise(resolve => {
-        setTimeout(resolve, ms);
-    });
-}
-
 // ページロード時の開始時間を記録する変数
 let startTime;
 
@@ -1072,29 +1160,36 @@ menuObjects.onItemValueChanged = (changedMenuObject) => {
     // ---合計金額を更新する
     const totalPrice = menuObjects.calculateTotalPrice();
     document.getElementById('total-price').textContent = totalPrice.toLocaleString();
+
+    // 栄養素の合計を再計算し、表を更新
+    const totalNutrition = menuObjects.calculateNutrition();
+    menuObjects.updateNutritionTable(totalNutrition);
 }
 menuObjects.onItemListChanged = (changedMenuObject) => {
     // ---合計金額を更新する
     const totalPrice = menuObjects.calculateTotalPrice();
     document.getElementById('total-price').textContent = totalPrice.toLocaleString();
+
+    // 栄養素の合計を再計算し、表を更新
+    const totalNutrition = menuObjects.calculateNutrition();
+    menuObjects.updateNutritionTable(totalNutrition);
 }
 
 // ----------
 // ---デバッグ用
 // ----------
 new MenuObject(menuObjects, {
-    "display_name": "塩キャベツサラダ",
-    "jan_code": "2121052057441",
-    "price": 66,
-    "romaji": "SHIO KYABETSU SARADA",
-    "yolo_name": "salted_cabbage_salad"
-});
-new MenuObject(menuObjects, {
     "display_name": "中 自家製カレー",
     "jan_code": "2121052120800",
     "price": 341,
     "romaji": "homemade_curry",
-    "yolo_name": "homemade_curry"
+    "yolo_name": "homemade_curry",
+    "energy": 1000,
+    "protein": 1000,
+    "fat": 1000,
+    "carbohydrates": 2,
+    "fiber": 3,
+    "vegetables": 4,
 });
 menuObjects.onItemListChanged();
 // const testButton = document.getElementById('start-button');
@@ -1164,7 +1259,21 @@ debugButton.addEventListener('click', async () => {
             for (const item of json['items']) {
                 console.log(item);
                 if (item["display_name"] !== "unknown") {
-                    const menuObject = new MenuObject(menuObjects, item);
+                    const menuObject = new MenuObject(menuObjects, {
+                        display_name: item.display_name,
+                        romaji: item.romaji,
+                        yolo_name: item.yolo_name,
+                        jan_code: item.jan_code,
+                        price: item.price,
+                        // 栄養価情報を明示的に渡す
+                        energy: Number(item.energy) || 0,
+                        protein: Number(item.protein) || 0,
+                        fat: Number(item.fat) || 0,
+                        carbohydrates: Number(item.carbohydrates) || 0,
+                        fiber: Number(item.fiber) || 0,
+                        vegetables: Number(item.vegetables) || 0
+                    });
+                    console.log('Created MenuObject:', menuObject);  // デバッグログ追加
                 }
             }
 

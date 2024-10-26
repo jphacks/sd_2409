@@ -6,8 +6,8 @@ import cv2
 import numpy as np
 import base64
 import warnings
-import json
 import random
+import json
 from flask import Flask, send_file, abort
 
 from Yolov9Wrapper.Yolov9Wrapper import Yolov9
@@ -15,7 +15,6 @@ from incomings.variables import EnvVariables
 from modules.MenuCache import MenuCache
 from modules.inference import inference_osara_shohin
 from modules.menu import Menu
-
 
 #############################################
 ##           初期設定(パスなど)             ##
@@ -133,7 +132,7 @@ def start_inference():
     # ----------
     # ---リクエストの処理
     # ----------
-    # ---プリフライト対応
+    # ---プリフライト対応 
     if request.method == "OPTIONS":
         return jsonify({"success": True})
     
@@ -175,12 +174,38 @@ def start_inference():
     total_price = 0
     for item in menu_objects:
         total_price += item['price']
+
+    # ---各合計の栄養素を計算
+    nutrition_totals = {
+        'energy': 0,
+        'protein': 0,
+        'fat': 0,
+        'carbohydrates': 0,
+        'fiber': 0,
+        'vegetables': 0,
+    }
+
+    for item in menu_objects:
+        # 各栄養素の合計値を更新
+        if item.get('energy'):
+            nutrition_totals['energy'] += float(item['energy'])
+        if item.get('protein'):
+            nutrition_totals['protein'] += float(item['protein'])
+        if item.get('fat'):
+            nutrition_totals['fat'] += float(item['fat'])
+        if item.get('carbohydrates'):
+            nutrition_totals['carbohydrates'] += float(item['carbohydrates'])
+        if item.get('fiber'):
+            nutrition_totals['fiber'] += float(item['fiber'])
+        if item.get('vegetables'):
+            nutrition_totals['vegetables'] += float(item['vegetables'])
     
     # ---レスポンスを返す
     return jsonify({
         'image': image_base64,
         'items': menu_objects,
-        'total': total_price
+        'total': total_price,
+        'nutrition_totals': nutrition_totals,
     })
 
 ###############################################
@@ -395,7 +420,6 @@ def reset_menu_cache():
         print(f"エラーが発生しました: {e}")
         return jsonify({'success': False})
     
-
 ########################################################
 ##        　　　　　    ルーレット動画　               ##
 ########################################################
@@ -420,7 +444,6 @@ def run_hit_script():
         return jsonify({'success': True})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
 
 # 最後に実行する必要あり
 if __name__ == '__main__':
