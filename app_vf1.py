@@ -11,8 +11,10 @@ import json
 
 from Yolov9Wrapper.Yolov9Wrapper import Yolov9
 from incomings.variables import EnvVariables
+from jph.Speech import choose_voice, encode_voice_data
 from modules.Logging import log_as_labelme
 from modules.MenuCache import MenuCache
+from modules.Types import MenuObject
 from modules.inference import inference_osara_shohin
 from modules.menu import Menu
 
@@ -181,20 +183,30 @@ def start_inference():
     # `detected_items` がリストであることを確認し、空なら空リストにする
     # menu_objects = menu_objects if menu_objects else []
     
+    menu_objects: list[MenuObject] = []
     # ---合計金額を計算
     total_price = 0
     for box in new_osresult['boxes']:
         menu_object = box['menu_object']
+        menu_objects.append(menu_object)
         if not menu_object:
             continue
         total_price += menu_object['price']
+    
+    # ---[JPHacks用]音声を選び、エンコード・返却する
+    voice_data=choose_voice(menu_objects)
+    voice_base64=encode_voice_data(voice_data)
     
     # ---レスポンスを返す
     # OsaraShohinResultとほぼ同じ形式で返す
     return jsonify({
         # 'image': image_base64,
         "boxes": new_osresult["boxes"],
-        'total': total_price
+        'total': total_price,
+        "voice": {
+            "text": voice_data["voice"],
+            "base64": voice_base64
+        }
     })
 
 ###############################################
@@ -372,6 +384,7 @@ def logging():
         - xyxy
     """
     
+    # return jsonify({'success': True}) // [デバッグ用]
     
     # ---リクエストデータを取得
     request_data = request.json

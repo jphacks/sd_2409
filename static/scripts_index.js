@@ -1167,7 +1167,7 @@ document.getElementById('confirm-button').addEventListener('click', async functi
                 "label": bbox.getBboxParameters().menu_object.menu_code,
                 "xyxy": bbox.getBboxParameters().xyxy,
             }))
-        })  
+        })
     })
 
     // await wait(1000); // 何となく1秒待つ
@@ -1413,6 +1413,16 @@ async function startInference(base64Image) {
     const endTime = performance.now();  // 終了時間
     const duration = (endTime - startTime) / 1000;  // 経過時間 (秒)
     document.getElementById('load-time').textContent = `処理時間: ${duration.toFixed(2)} 秒`;
+
+    // ---[JPHacks用]音声を再生する
+    const voiceText = json['voice']["text"];
+    document.getElementById('payment-message').innerHTML = voiceText;
+
+    const voiceWav = json['voice']["base64"];
+    const voiceBase64 = `data:audio/wav;base64,${voiceWav}`;
+    const audio = new Audio(voiceBase64);
+    audio.play();
+
 }
 
 
@@ -1436,8 +1446,26 @@ debugButton.addEventListener('click', async () => {
 
 });
 
-// ---[デバッグ用]右クリックで、デバッグ表示する
+// ---[デバッグ用]右クリックで、いろいろやる
+
 document.addEventListener('contextmenu', (e) => {
-    console.log('menuObjects:', menuObjects);
-    console.log('bboxesObject:', bboxesObject);
+    // console.log('menuObjects:', menuObjects);
+    // console.log('bboxesObject:', bboxesObject);
+    // 「/static/あたりなのだ.wav」を再生する
+
+    toggleZundamon = !toggleZundamon;
+    if (toggleZundamon) {
+        omedetou()
+    }
 });
+// ---ずんだもん無限再生
+let toggleZundamon = false
+function omedetou() {
+    const audio = new Audio('/static/おめでとうなのだ.wav');
+    audio.play();
+    audio.addEventListener('ended', () => {
+        if (toggleZundamon) {
+            omedetou()
+        }
+    });
+}
