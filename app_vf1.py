@@ -175,37 +175,11 @@ def start_inference():
     for item in menu_objects:
         total_price += item['price']
 
-    # ---各合計の栄養素を計算
-    nutrition_totals = {
-        'energy': 0,
-        'protein': 0,
-        'fat': 0,
-        'carbohydrates': 0,
-        'fiber': 0,
-        'vegetables': 0,
-    }
-
-    for item in menu_objects:
-        # 各栄養素の合計値を更新
-        if item.get('energy'):
-            nutrition_totals['energy'] += float(item['energy'])
-        if item.get('protein'):
-            nutrition_totals['protein'] += float(item['protein'])
-        if item.get('fat'):
-            nutrition_totals['fat'] += float(item['fat'])
-        if item.get('carbohydrates'):
-            nutrition_totals['carbohydrates'] += float(item['carbohydrates'])
-        if item.get('fiber'):
-            nutrition_totals['fiber'] += float(item['fiber'])
-        if item.get('vegetables'):
-            nutrition_totals['vegetables'] += float(item['vegetables'])
-    
     # ---レスポンスを返す
     return jsonify({
         'image': image_base64,
         'items': menu_objects,
         'total': total_price,
-        'nutrition_totals': nutrition_totals,
     })
 
 ###############################################

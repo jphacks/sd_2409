@@ -918,29 +918,11 @@ var socket = io(); // Socket.IOの初期化
 ///         確定ボタンクリック時         ///////
 ////////////////////////////////////////
 document.getElementById('confirm-button').addEventListener('click', async function () {
-    // 栄養情報を模擬データとして設定（実際はAPIから取得）
-    const nutritionData = [
-        { energy: 200, protein: 10, fat: 5, carbs: 30, fiber: 2, vegetable: 50 },
-        { energy: 400, protein: 20, fat: 10, carbs: 60, fiber: 4, vegetable: 100 },
-        { energy: 600, protein: 30, fat: 15, carbs: 90, fiber: 6, vegetable: 150 }
-    ];
-
-    // 栄養情報をテーブルに追加
-    const tbody = document.getElementById('nutrition-table-body');
-    tbody.innerHTML = ''; // 既存の内容をクリア
-
-    nutritionData.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.energy}</td>
-            <td>${item.protein}</td>
-            <td>${item.fat}</td>
-            <td>${item.carbs}</td>
-            <td>${item.fiber}</td>
-            <td>${item.vegetable}</td>
-        `;
-        tbody.appendChild(row);
-    });
+    // 栄養素の合計を計算
+    const totalNutrition = menuObjects.calculateNutrition();
+    
+    // 栄養素の割合を棒グラフとして描画
+    drawNutritionChart(totalNutrition);
     
     const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
     const isHit = Math.random() < hitProbability; // あたりかどうかの判定
@@ -1175,6 +1157,63 @@ menuObjects.onItemListChanged = (changedMenuObject) => {
     menuObjects.updateNutritionTable(totalNutrition);
 }
 
+function drawNutritionChart(nutrition) {
+    const canvas = document.getElementById('nutrition-chart');
+    const ctx = canvas.getContext('2d');
+
+    // 1/3日分の基準値（例として適当な値を設定）
+    const dailyRequirement = {
+        energy: 750,          // kcal
+        protein: 20,          // g
+        fat: 22,              // g
+        carbohydrates: 80,    // g
+        fiber: 8,             // g
+        vegetables: 100       // mg
+    };
+
+    // canvasの設定
+    canvas.width = 600;
+    canvas.height = 300;
+
+    // 背景色を追加
+    ctx.fillStyle = '#f5f5f5';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const labels = ['エネルギー', 'タンパク質', '脂質', '炭水化物', '食物繊維', '野菜量'];
+    const values = [
+        (nutrition.energy / dailyRequirement.energy) * 100,
+        (nutrition.protein / dailyRequirement.protein) * 100,
+        (nutrition.fat / dailyRequirement.fat) * 100,
+        (nutrition.carbohydrates / dailyRequirement.carbohydrates) * 100,
+        (nutrition.fiber / dailyRequirement.fiber) * 100,
+        (nutrition.vegetables / dailyRequirement.vegetables) * 100
+    ];
+
+    const barWidth = canvas.width / labels.length - 20; // 各バーの幅
+    const maxHeight = canvas.height * 0.8; // 最大バーの高さ
+
+    values.forEach((value, index) => {
+        const barHeight = Math.min((value / 100) * maxHeight, maxHeight); // 高さを最大値までに制限
+        const x = index * (barWidth + 20) + 10;
+        const y = canvas.height - barHeight - 30; // バーの上部を少し下げる
+
+        // 100%以上で色を変える
+        ctx.fillStyle = value > 100 ? 'rgba(255, 99, 71, 0.8)' : 'rgba(0, 123, 255, 0.7)';
+
+        // バーの描画
+        ctx.fillRect(x, y, barWidth, barHeight);
+
+        // %表示の追加
+        ctx.fillStyle = '#000';
+        ctx.font = '14px Noto Sans JP';
+        ctx.textAlign = 'center';
+        ctx.fillText(`${value.toFixed(1)}%`, x + barWidth / 2, y - 5); // バーの上に%を表示
+
+        // ラベルの表示
+        ctx.fillText(labels[index], x + barWidth / 2, canvas.height - 10); // ラベルを下部に表示
+    });
+}
+
 // ----------
 // ---デバッグ用
 // ----------
@@ -1184,12 +1223,12 @@ new MenuObject(menuObjects, {
     "price": 341,
     "romaji": "homemade_curry",
     "yolo_name": "homemade_curry",
-    "energy": 1000,
-    "protein": 1000,
-    "fat": 1000,
-    "carbohydrates": 2,
-    "fiber": 3,
-    "vegetables": 4,
+    "energy": 0,
+    "protein": 0,
+    "fat": 0,
+    "carbohydrates": 0,
+    "fiber": 0,
+    "vegetables": 0,
 });
 menuObjects.onItemListChanged();
 // const testButton = document.getElementById('start-button');
