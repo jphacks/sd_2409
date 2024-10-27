@@ -1215,8 +1215,12 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     // ----------
     // ---抽選部分
     // ----------
-    await lottery();
+    const isHit = await lottery();
+    // TODO ここで当選情報をsocket通信する
 
+    // ----------
+    // ---支払い情報の送信部分
+    // ----------
     const uuid = this.getAttribute('data-uuid'); // data-uuid属性からUUIDを取得
     console.log("Pythonの実行を要求します");
     document.getElementById('payment-message').innerHTML = `(${uuid})<br>お支払いに進んでください`;
@@ -1415,6 +1419,8 @@ async function lottery() {
     roulettePointerImage.style.transform = `translate(-50%, -50%) rotate(0deg)`;
     await wait(10);
     roulettePointerImage.style.transition = prevTransition;
+
+    return isHit;
 }
 
 // ----------
