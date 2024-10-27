@@ -13,49 +13,6 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@100..900&family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap"
         rel="stylesheet">
-    <style>
-        /* 栄養情報テーブルのスタイル */
-        .styled-table {
-            border: 2px solid #444; /* 外枠線 */
-            border-radius: 5px; /* 角を少し丸める */
-            overflow: hidden;
-            width: 100%;
-            font-family: 'Noto Sans JP', sans-serif;
-        }
-
-        .styled-table th, .styled-table td {
-            padding: 10px; /* 余白を追加 */
-            text-align: center; /* 中央揃え */
-            border-bottom: 1px solid #ddd; /* 下線 */
-        }
-
-        /* テーブルヘッダーのスタイル */
-        .styled-table thead tr {
-            background-color: #333; /* ヘッダーの背景色 */
-            color: #fff; /* ヘッダーの文字色 */
-            font-weight: bold;
-        }
-
-        /* 偶数行に背景色を設定 */
-        .styled-table tbody tr:nth-child(even) {
-            background-color: #f2f2f2;
-        }
-
-        /* ホバーしたときの行のスタイル */
-        .styled-table tbody tr:hover {
-            background-color: #ddd;
-        }
-
-        /* 枠線の内側も調整 */
-        .styled-table td, .styled-table th {
-            border-right: 1px solid #ddd;
-        }
-
-        /* 最後の列には右側の枠線を非表示 */
-        .styled-table tr td:last-child {
-            border-right: none;
-        }
-    </style>
 </head>
 
 <body>
@@ -67,8 +24,11 @@
             </h1>
         </div>
         <div class="header__right-div">
+            <div class="header__info">
+                <div id="load-time">判定時間: --秒</div>
+                <div id="payment-message">　</div>
+            </div>
             <div class="header__buttons">
-                <div id="load-time" style="margin-right: 1vw;">判定時間: </div>
                 <button id="retry-button">再スキャン</button>
                 <button id="cancel-button" class="cancel-button">前画面に戻る</button>
             </div>
@@ -80,13 +40,16 @@
         <div class="main">
             <div class="left">
                 <!-- 栄養表示のため，画像を表示する枠のサイズを変更 -->
-                <div id="imageDiv" style="width: 800px; height: 600px; border: 2px solid #ccc; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                     <!-- 栄養素の棒グラフを描画 -->
-                    <canvas id="nutrition-chart" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;"></canvas>
+                <div id="imageDiv">
                     <div id="bboxesDiv">
                         <!-- ここにbboxが入る -->
                     </div>
-                    <img id="detected-image" src="" alt="検出結果画像" style="max-width: 100%; max-height: 100%; object-fit: cover;">
+                    <!-- 栄養素の棒グラフを描画 -->
+                    <div id="nutrition-chart-div">
+                        <canvas id="nutrition-chart"></canvas>
+                    </div>
+                    <img id="detected-image" src="" alt="検出結果画像"
+                        style="max-width: 100%; max-height: 100%; object-fit: cover;">
                 </div>
             </div>
             <div class="right">
@@ -116,9 +79,8 @@
         </div>
         <div class="bottom">
             <div class="bottom__left">
-                <div id="payment-message"></div>
-                 <!-- 栄養情報の表 -->
-                 <table id="nutrition-table" class="styled-table" style="width: 100%; margin-top: 10px;">
+                <!-- 栄養情報の表 -->
+                <table id="nutrition-table" class="styled-table">
                     <thead>
                         <tr>
                             <th>エネルギー (kcal)</th>
@@ -158,7 +120,10 @@
         </div>
     </div>
     <!-- スクリプト -->
-    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script> <!-- ドラッグアンドドロップ用のスクリプト(InteractJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+    <!-- ドラッグアンドドロップ用のスクリプト(InteractJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- グラフ描画用のスクリプト(Chart.js) -->
+    <script src="path/to/chartjs-plugin-annotation/dist/chartjs-plugin-annotation.min.js"></script>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> <!-- SocketIO用のスクリプト -->
     <script src="/static/scripts_index.js"></script>
 </body>

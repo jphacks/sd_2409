@@ -1374,6 +1374,7 @@ document.getElementById('cancel-button').addEventListener('click', function () {
 async function lottery() {
     const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
     const isHit = Math.random() < hitProbability; // あたりかどうかの判定
+    // return isHit;
 
     // ---ポップアップ用の要素を取得する
     const lotteryPopupDiv = document.getElementById('lotteryPopupDiv');
@@ -1460,10 +1461,9 @@ menuObjects.onItemListChanged = (changedMenuObject) => {
 const bboxesDiv = document.getElementById('bboxesDiv');
 const bboxesObject = new Bboxes(bboxesDiv);
 
-function drawNutritionChart(nutrition) {
-    const canvas = document.getElementById('nutrition-chart');
-    const ctx = canvas.getContext('2d');
-
+let prevChart = null;
+async function drawNutritionChart(nutrition) {
+    // ---表示する値を計算する
     // 1/3日分の基準値（例として適当な値を設定）
     const dailyRequirement = {
         energy: 750,          // kcal
@@ -1473,15 +1473,6 @@ function drawNutritionChart(nutrition) {
         fiber: 8,             // g
         vegetables: 100       // mg
     };
-
-    // canvasの設定
-    canvas.width = 600;
-    canvas.height = 300;
-
-    // 背景色を追加
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     const labels = ['エネルギー', 'タンパク質', '脂質', '炭水化物', '食物繊維', '野菜量'];
     const values = [
         (nutrition.energy / dailyRequirement.energy) * 100,
@@ -1491,30 +1482,170 @@ function drawNutritionChart(nutrition) {
         (nutrition.fiber / dailyRequirement.fiber) * 100,
         (nutrition.vegetables / dailyRequirement.vegetables) * 100
     ];
+    const backgroundColors = values.map(value => value > 100 ? 'rgba(255, 99, 71, 0.8)' : 'rgba(0, 123, 255, 0.7)');
 
-    const barWidth = canvas.width / labels.length - 20; // 各バーの幅
-    const maxHeight = canvas.height * 0.8; // 最大バーの高さ
 
-    values.forEach((value, index) => {
-        const barHeight = Math.min((value / 100) * maxHeight, maxHeight); // 高さを最大値までに制限
-        const x = index * (barWidth + 20) + 10;
-        const y = canvas.height - barHeight - 30; // バーの上部を少し下げる
+    // ---表示用のdivを表示する
+    const nutritionChartDiv = document.getElementById('nutrition-chart-div');
+    nutritionChartDiv.style.display = 'block';
+    await wait(10); // 表示を待つ
+    nutritionChartDiv.style.opacity = 1;
+    // ---canvasの設定(サイズをあわせる)
+    const canvas = document.getElementById('nutrition-chart');
+    const canvasRect = canvas.getBoundingClientRect();
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
 
-        // 100%以上で色を変える
-        ctx.fillStyle = value > 100 ? 'rgba(255, 99, 71, 0.8)' : 'rgba(0, 123, 255, 0.7)';
+    // ---Chartjsで描画する
+    const ctx = canvas.getContext('2d');
+    // ---既存のグラフを削除
+    if (prevChart) {
+        prevChart.destroy();
+    }
 
-        // バーの描画
-        ctx.fillRect(x, y, barWidth, barHeight);
-
-        // %表示の追加
-        ctx.fillStyle = '#000';
-        ctx.font = '14px Noto Sans JP';
-        ctx.textAlign = 'center';
-        ctx.fillText(`${value.toFixed(1)}%`, x + barWidth / 2, y - 5); // バーの上に%を表示
-
-        // ラベルの表示
-        ctx.fillText(labels[index], x + barWidth / 2, canvas.height - 10); // ラベルを下部に表示
+    const myChart = new Chart(ctx, {
+        type: "bar",
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: "栄養素",
+                    data: values,
+                    backgroundColor: backgroundColors,
+                    borderColor: "#fff", // 白のボーダーでポップに
+                    borderWidth: 2,
+                    borderRadius: 8, // 丸みを帯びた角にしてポップな印象に
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            layout: {
+                padding: 20
+            },
+            plugins: {
+                title: {
+                  display: true,       // タイトルを表示
+                  text: '理想的な1食分に占める割合 [%]',  // タイトルのテキスト
+                  font: {
+                    size: 24               // タイトルのフォントサイズを指定
+                  }
+                },
+                legend: {
+                    labels: {
+                        color: "#007bff",
+                        font: {
+                            size: 14,
+                            family: "'Comic Sans MS', cursive" // 楽しげなフォント
+                        }
+                    }
+                },
+                tooltip: {
+                    backgroundColor: "#fffbcc", // 明るく柔らかい背景色
+                    titleColor: "#333",
+                    bodyColor: "#333",
+                    bodyFont: {
+                        family: "'Comic Sans MS', cursive",
+                        size: 14
+                    },
+                    borderColor: "#ffa726",
+                    borderWidth: 1
+                },
+                // annotation: {
+                //     annotations: {
+                //         line1: {
+                //             type: 'line',
+                //             yMin: 60,
+                //             yMax: 60,
+                //             borderColor: '#ff6b6b',
+                //             borderWidth: 2,
+                //             borderDash: [6, 6], // 破線にして楽しい雰囲気に
+                //             label: {
+                //                 content: '目標',
+                //                 enabled: true,
+                //                 color: "#333",
+                //                 backgroundColor: "#FFDDC1",
+                //                 font: {
+                //                     size: 12,
+                //                     family: "'Comic Sans MS', cursive"
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: "#007bff",
+                        font: {
+                            family: "'Comic Sans MS', cursive",
+                            size: 12
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: "#ffe0b2", // 明るい色で柔らかさを演出
+                        borderDash: [4, 4]
+                    },
+                    ticks: {
+                        color: "#007bff",
+                        font: {
+                            family: "'Comic Sans MS', cursive",
+                            size: 12
+                        }
+                    }
+                }
+            },
+            animations: {
+                tension: {
+                    duration: 2000,
+                    easing: "easeInOutBounce"
+                }
+            },
+        }
     });
+
+    prevChart = myChart;
+    // // canvasの設定
+    // canvas.width = 600;
+    // canvas.height = 300;
+
+    // // 背景色を追加
+    // ctx.fillStyle = '#f5f5f5';
+    // ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+
+
+    // const barWidth = canvas.width / labels.length - 20; // 各バーの幅
+    // const maxHeight = canvas.height * 0.8; // 最大バーの高さ
+
+    // values.forEach((value, index) => {
+    //     const barHeight = Math.min((value / 100) * maxHeight, maxHeight); // 高さを最大値までに制限
+    //     const x = index * (barWidth + 20) + 10;
+    //     const y = canvas.height - barHeight - 30; // バーの上部を少し下げる
+
+    //     // 100%以上で色を変える
+    //     ctx.fillStyle = value > 100 ? 'rgba(255, 99, 71, 0.8)' : 'rgba(0, 123, 255, 0.7)';
+
+    //     // バーの描画
+    //     ctx.fillRect(x, y, barWidth, barHeight);
+
+    //     // %表示の追加
+    //     ctx.fillStyle = '#000';
+    //     ctx.font = '14px Noto Sans JP';
+    //     ctx.textAlign = 'center';
+    //     ctx.fillText(`${value.toFixed(1)}%`, x + barWidth / 2, y - 5); // バーの上に%を表示
+
+    //     // ラベルの表示
+    //     ctx.fillText(labels[index], x + barWidth / 2, canvas.height - 10); // ラベルを下部に表示
+    // });
 }
 
 // ----------
@@ -1590,6 +1721,10 @@ menuObjects.onItemListChanged();
  * @param {string} base64Image
  */
 async function startInference(base64Image) {
+    // ---画面リセット
+    const nutritionChartDiv = document.getElementById('nutrition-chart-div');
+    nutritionChartDiv.style.display = 'none';
+
     const base64 = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
     // ---時間を記録する
     const startTime = performance.now();
