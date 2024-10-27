@@ -256,7 +256,7 @@ def start_inference():
     
     # エクスプローラーで音声ファイルを開く
     audio_path="./"+voice_data['voice_path']
-    # os.system(f"start {audio_path}")
+    os.system(f"start {audio_path}")
         
     # ---レスポンスを返す
     # OsaraShohinResultとほぼ同じ形式で返す
