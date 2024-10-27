@@ -50,7 +50,7 @@ class Menu:
                     fat_column = field
                 elif "炭水化物" in field:
                     carbohydrates_column = field
-                elif "食物繊維" in field:
+                elif "食塩相当量" in field:
                     fiber_column = field
                 elif "野菜量" in field:
                     vegetables_column = field
@@ -93,25 +93,27 @@ class Menu:
                     "yolo_name": yolo_name,
                     "jan_code": jan_code,
                     "price": price,
-                    "energy": energy,
-                    "protein": protein,
-                    "fat": fat,
-                    "carbohydrates": carbohydrates,
-                    "fiber": fiber,
-                    "vegetables": vegetables,
+                    "nutrition": {
+                        "energy": energy,
+                        "protein": protein,
+                        "fat": fat,
+                        "carbohydrates": carbohydrates,
+                        "fiber": fiber,
+                        "vegetables": vegetables,
+                    }
                 }
 
         self.menu = menu
 
     def find_menu_by_OsaraShohinResult(
         self, target: OsaraShohinResult
-    ) -> list[MenuObject]:
-        """OsaraShohinResultからメニューを検索する
+    ) -> OsaraShohinResult:
+        """OsaraShohinResultからメニューを検索し、OsaraShohinResultに紐づける
 
         Args:
-            target (OsaraShohinResult): 検索したいOsaraShohinResult
+            target (OsaraShohinResult): 検索したいOsaraShohinResult。menu_objectがNoneだと思われる。
         Returns:
-            list[MenuObject]: 検索結果のメニューオブジェクトのリスト
+            OsaraShohinResult: 検索結果を紐づけたOsaraShohinResult
         """
         results: list[MenuObject] = []
         for box in target["boxes"]:  # 各商品(bbox)に対して
@@ -127,8 +129,8 @@ class Menu:
                 f"\33[32m[find_menu_by_OsaraShohinResult] label: {label}, candidate counts: {len(candidate_menu_objects)}\33[0m"
             )
 
-            # ---検索した結果、候補が複数あった場合、面積で絞り込む(小・中・大があるようなやつ)
             if len(candidate_menu_objects) > 1:
+                # ---検索した結果、候補が複数あった場合、面積で絞り込む(小・中・大があるようなやつ)
                 # ---面積を計算する
                 xyxy = box["xyxy"]
                 area = (xyxy[2] - xyxy[0]) * (xyxy[3] - xyxy[1])
@@ -167,13 +169,28 @@ class Menu:
                     "yolo_name": None,
                     "jan_code": None,
                     "price": 0,
+                    "nutrition": {
+                        "energy": None,
+                        "protein": None,
+                        "fat": None,
+                        "carbohydrates": None,
+                        "fiber": None,
+                        "vegetables": None,
+                    }
                 }
                 box["menu_object"] = new_menu_object
                 results.append(new_menu_object)
 
             # find_menu_object=self.menu.get(label,None) # homemade_curryがサイズ分複数あるので、これは無理
 
-        return results
+        # ---渡されたOsaraShohinResultに、メニューオブジェクトを紐づけた、新規OsaraShohinResultを作成して返す
+        new_osresult: OsaraShohinResult = {
+            "image": target["image"],
+            "path": target["path"],
+            "boxes": target["boxes"],  #上で紐づいているので、そのまま渡す
+        }
+
+        return new_osresult
 
     def classify_by_size(
         self, area: float, thresholds: Tuple[float, float]

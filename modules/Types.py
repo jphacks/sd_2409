@@ -12,6 +12,31 @@ import numpy as np
 # ----------
 # ---メニューのデータクラス
 # ----------
+class Nutrition(TypedDict):
+    """栄養成分を格納するデータクラス。
+
+    Example:
+    下のような形で保存される
+    ```json
+    {
+        "energy": float,  # エネルギー(kcal)
+        "protein": float,  # たんぱく質(g)
+        "fat": float,  # 脂質(g)
+        "carbohydrates": float,  # 炭水化物(g)
+        "fiber": float,  # 食物繊維(g)
+        "vegetables": float,  # 野菜(g)
+    }
+    ```
+    """
+
+    energy: float  # エネルギー(kcal)
+    protein: float  # たんぱく質(g)
+    fat: float  # 脂質(g)
+    carbohydrates: float  # 炭水化物(g)
+    fiber: float  # 食物繊維(g)
+    vegetables: float  # 野菜(g)
+
+
 class MenuObject(TypedDict):
     """メニューの情報を格納するデータクラス。
 
@@ -19,23 +44,31 @@ class MenuObject(TypedDict):
     下のような形で保存される
     ```json
     {
+        "menu_code": str,  # メニューコード。「212080」
         "display_name": str,  # 表示名。「自家製カレー」
         "romaji": str,  # ローマ字。「JIKASEI KARE」
         "yolo_name": str,  # YOLOモデルの学習名。「homemade_curry」
         "jan_code": str,  # JANコード「2121052120800」
         "price": int,  # 価格。「341」
+        "nutrition": {
+            "energy": float,  # エネルギー(kcal)
+            "protein": float,  # たんぱく質(g)
+            "fat": float,  # 脂質(g)
+            "carbohydrates": float,  # 炭水化物(g)
+            "fiber": float,  # 食物繊維(g)
+            "vegetables": float,  # 野菜(g)
+        }
     }
 
     """
 
+    menu_code: str  # メニューコード。「212080」
     display_name: str  # 表示名。「自家製カレー」
     romaji: str  # ローマ字。「JIKASEI KARE」
     yolo_name: str  # YOLOモデルの学習名。「homemade_curry」
     jan_code: str  # JANコード「2121052120800」
     price: int  # 価格。「341」
-
-    def __repr__(self):
-        return f"MenuObject(display_name={self.display_name}, romaji={self.romaji}, yolo_name={self.yolo_name}, jan_code={self.jan_code}, price={self.price})"
+    nutrition: Nutrition  # 栄養成分
 
 
 # ----------
@@ -83,6 +116,7 @@ class OsaraShohinResult(TypedDict):
                 "confidence": float,  # 確信度
                 "xyxy": Tuple[float, float, float, float],  # bboxの座標(0-1)
                 "menu_object": {
+                    "menu_code": str,  # メニューコード。「212080」
                     "display_name": str,  # 表示名。「自家製カレー」
                     "romaji": str,  # ローマ字。「JIKASEI KARE」
                     "yolo_name": str,  # YOLOモデルの学習名。「homemade_curry」

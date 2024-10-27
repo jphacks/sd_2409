@@ -11,8 +11,11 @@ body {
   gap: 1vw;
   color: #333;
   user-select: none; /* 文字選択禁止 */
+  /* ChatGPTに作ってもらったソフトグラデーション。えもい。 */
+  background: linear-gradient(135deg, #f5f7fa 40%, #e2e8f0 70%, #c3cfe2);
 }
 .container {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -36,7 +39,8 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #e0e0e0;
+  /* background-color: #e0e0e0; */
+  background: linear-gradient(135deg, #e5e5e5 20%, #c2c5c9 50%, #a3a6aa);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -62,10 +66,41 @@ body {
   width: 50%;
   padding: 1vw;    /* 内側に余白を追加 */ 
 }
-#bboxDiv{
+#bboxesDiv{
   position:absolute;
-  background-color: rgba(0, 0, 0, 0.5);
+  /* background-color: rgba(0, 0, 0, 0.5); */
 }
+
+/* Container for bounding box */
+.bboxDiv {
+  position: absolute;
+  border: 2px solid rgba(0, 123, 255, 0.8); /* Light blue border */
+  background-color: rgba(0, 123, 255, 0.15); /* Translucent blue overlay */
+  border-radius: 8px; /* Rounded corners */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow */
+}
+
+/* Label styling */
+.bboxDiv span {
+  position: absolute;
+  top: -1.5vw; /* Position label above bounding box */
+  left: 0;
+  padding: 0.4vw 0.8vw;
+  color: #fff;
+  font-size: 1vw;
+  font-weight: 500;
+  background-color: rgba(0, 123, 255, 0.9); /* Darker blue for contrast */
+  border-radius: 8px; /* Rounded corners for label */
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15); /* Shadow for label */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+/* Hover effect for bounding box */
+.bboxDiv:hover {
+  border-color: rgba(0, 123, 255, 1); /* Darker blue border on hover */
+  background-color: rgba(0, 123, 255, 0.2); /* Slightly darker overlay */
+}
+
 
 /* ----------------------------------------------------------------- */
 /* startページ */
@@ -230,6 +265,8 @@ body {
   border: 2px solid #ddd;        /* ボーダーを追加して視覚的に区別 */
   border-radius: 0.5vw;            /* 角を丸めて柔らかい印象に */
   transition: background-color 0.3s ease; /* ホバー時の背景色変化をアニメーションで */
+  transition: border-color 0.3s ease; /* ボーダー色変化をアニメーションで */
+  transition: box-shadow 0.3s ease; /* 影の変化をアニメーションで */
 }
 #menu-list rt { /* メニューのルビ(ローマ字) */
   font-size: 0.7em;   
@@ -279,7 +316,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1vw;
-  background-color: #f9f9f9;
+  /* background-color: #f9f9f9; */
   box-shadow: 0 0.2vw 0.4vw rgba(0, 0, 0, 0.2);
 }
 .bottom__left {
@@ -332,7 +369,7 @@ body {
   border: 0.2vw solid #ccc;      /* ボーダーのスタイル */
   border-radius: 0.8vw;          /* 角を丸くする */
   padding: 1vw;                 
-  width: 100%;                   /* 親要素に合わせた幅 */
+  width: fit-content;                   /* 親要素に合わせた幅 */
   box-sizing: border-box;        /* パディングやボーダーを含めた幅にする */
   cursor: pointer;               /* ポインタカーソルを表示 */
   z-index: 100;                  /* ドロップダウンメニューを前面に表示 */
@@ -489,4 +526,107 @@ body {
     background-color: #f44336; /* キャンセルボタンは赤色 */
   }
 }
+/* ----------------------------------------------------------------- */
+/* 抽選ポップアップ画面 */
+/* ----------------------------------------------------------------- */
+#lotteryPopupDiv {
+  /* display: none; ポップアップを非表示 */
+  position: fixed; /* 画面全体に固定 */
+  z-index: 1000; /* 最前面に表示 */
+  top: 0;
+  left: 0;
+  width: 100svw;
+  height: 100svh;
+  background-color: rgba(0, 0, 0, 0.5); /* 半透明の黒背景 */
+  display: flex; /* 中央揃え */
+  justify-content: center; /* 中央揃え */
+  align-items: center; /* 中央揃え */
+  transform: translateY(100%); /* 画面中央に表示 */
+  transition: transform 0.5s ease; /* アニメーションを追加 */
+
+  & .lotteryPopupContentDiv {
+    position: absolute; /* 絶対位置に配置 */
+    width: 40%; /* 幅を80%にする */
+    aspect-ratio: 1/1; /* アスペクト比を1:1にする */
+    top: 50%; /* 上下中央に配置 */
+    left: 50%; /* 左右中央に配置 */
+    transform: translate(-50%, -50%); /* 中央揃え */
+    padding: 2vw; /* 内側に余白を追加 */
+    background-color: white; /* 背景色を白にする */
+    border: 1vw solid #ddd; /* ボーダーを追加 */
+    animation: rainbow-border 3s infinite; /* ボーダーの色を変化させるアニメーション */
+    border-radius: 10vw; /* 角を丸くする */
+    font-size: 2vw; /* フォントサイズを指定 */
+    text-align: center; /* テキストを中央揃え */
+  }
+
+  & #lotteryMessageP{
+    position:absolute; /* 絶対位置に配置 */
+    top: 0; /* 上下中央に配置 */
+    left: 50%; /* 左右中央に配置 */
+    transform: translate(-50%, 0); /* 中央揃え */
+    font-size: 4vw; /* フォントサイズを指定 */
+    font-weight: bold; /* 太字にする */
+    opacity: 0; /* 透過率を0にする */
+    transition: opacity 0.5s ease; /* フェードインアニメーション */
+  }
+
+  & .lotteryRouletteBoardImage{
+    position:absolute; /* 絶対位置に配置 */
+    top: 50%; /* 上下中央に配置 */
+    left: 50%; /* 左右中央に配置 */
+    transform: translate(-50%, -50%); /* 中央揃え */
+    width: 80%;
+    height: auto; /* 高さを自動調整 */
+  }
+
+  & #lotteryRoulettePointerImage{
+    position:absolute; /* 絶対位置に配置 */
+    top: 50%; /* 上下中央に配置 */
+    left: 50%; /* 左右中央に配置 */
+    transform: translate(-50%, -50%) rotate(0deg); /* 中央揃え */
+    width: 30%; /* 幅を100%にする */
+    height: auto; /* 高さを自動調整 */
+    transition: transform 1s ease; /* 回転アニメーション */
+
+  }
+
+  & .lotteryInfoP{
+    position:absolute; /* 絶対位置に配置 */
+    bottom: 0; /* 下に配置 */
+    left: 50%; /* 左右中央に配置 */
+    transform: translate(-50%, 0); /* 中央揃え */
+    font-size: 1.5vw; /* フォントサイズを指定 */
+  }
+
+  & video{
+    width: 80%; /* 幅を100%にする */
+    height: auto; /* 高さを自動調整 */
+  }
+}
+
+@keyframes rainbow-border {
+  /* 0% {
+    border-color: red;
+  }
+  16% {
+    border-color: orange;
+  }
+  33% {
+    border-color: yellow;
+  }
+  50% {
+    border-color: green;
+  }
+  66% {
+    border-color: blue;
+  } */
+   
+  0% { border-color: Magenta; }
+  33% { border-color: yellow; }
+  66% { border-color: Cyan; }
+  100% { border-color: Magenta; }
+}
+
+
 /* ----------------------------------------------------------------- */
