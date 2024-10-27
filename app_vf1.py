@@ -444,10 +444,12 @@ def handle_execution_request(data):
     # dataが辞書型であるため、'uuid' キーから値を取り出す
     uuid = int(data['uuid'])
     jan_cords = data['jan_codes']
+    isHit=data['isHit']
     # データを1つの辞書にまとめる
     message_data = {
         'message': 'サーバーからPython実行を要求しています',
-        'jan_cords': jan_cords
+        'jan_cords': jan_cords,
+        'isHit':isHit
     }
     
     # 同一のUUIDのクライアントすべてにメッセージを送信

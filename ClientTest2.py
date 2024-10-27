@@ -30,18 +30,21 @@ def connect():
 @sio.on('run_python')
 def on_message(data):
     print('サーバーからのメッセージ:', data['message'])
-    
-    # JANコードを文字列として取得
-    if isinstance(data['jan_cords'], list):
-        # リストの場合は、カンマ区切りの文字列に変換
-        jan_cords = ','.join(data['jan_cords'])
+
+    if data['isHit']==True:
+        result=subprocess.run(['python', 'script.py', str(-1)], capture_output=True, text=True)
     else:
-        # それ以外の場合、そのまま使用
-        jan_cords = data['jan_cords']
-    
-    # Pythonスクリプトを実行し、JANコードを引数として渡す
-    result = subprocess.run(['python', 'script.py', jan_cords], capture_output=True, text=True)
-    print('Pythonスクリプトの実行結果:', result.stdout)
+        # JANコードを文字列として取得
+        if isinstance(data['jan_cords'], list):
+            # リストの場合は、カンマ区切りの文字列に変換
+            jan_cords = ','.join(data['jan_cords'])
+        else:
+            # それ以外の場合、そのまま使用
+            jan_cords = data['jan_cords']
+        
+        # Pythonスクリプトを実行し、JANコードを引数として渡す
+        result = subprocess.run(['python', 'script.py', jan_cords], capture_output=True, text=True)
+        print('Pythonスクリプトの実行結果:', result.stdout)
 
 @sio.event
 def disconnect():

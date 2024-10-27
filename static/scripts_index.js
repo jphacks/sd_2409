@@ -1228,7 +1228,8 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     // Pythonの実行要求をサーバーに送信
     socket.emit('request_python_execution', {
         'uuid': uuid,
-        'jan_codes': menuObjects.getJanCodes()
+        'jan_codes': menuObjects.getJanCodes(),
+        'isHit':isHit
     });
 
     // ----------
