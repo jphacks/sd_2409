@@ -1,6 +1,7 @@
 # 食べタグルーレット機能-自動会計システム「TORE」の新機能 #
 
-[![IMAGE ALT TEXT HERE](https://github.com/user-attachments/assets/6c739cc8-9787-4418-b9a9-671c5a8cbe23)(https://youtu.be/pitsQ3-7aKY)
+[![IMAGE ALT TEXT HERE](https://github.com/user-attachments/assets/6c739cc8-9787-4418-b9a9-671c5a8cbe23)](https://youtu.be/pitsQ3-7aKY)
+
 
 
 # 製品概要 #
