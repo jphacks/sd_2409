@@ -1568,21 +1568,52 @@ const bboxesObject = new Bboxes(bboxesDiv);
 // ----------
 // ---デバッグ用
 // ----------
-// new MenuObject(menuObjects, {
-//     "display_name": "塩キャベツサラダ",
-//     "jan_code": "2121052057441",
-//     "price": 66,
-//     "romaji": "SHIO KYABETSU SARADA",
-//     "yolo_name": "salted_cabbage_salad"
-// });
-// new MenuObject(menuObjects, {
-//     "display_name": "中 自家製カレー",
-//     "jan_code": "2121052120800",
-//     "price": 341,
-//     "romaji": "homemade_curry",
-//     "yolo_name": "homemade_curry"
-// });
-// menuObjects.onItemListChanged();
+const shiokyabetsu=new MenuObject(menuObjects, {
+    "display_name": "塩キャベツサラダ",
+    "jan_code": "2121052057441",
+    "price": 66,
+    "romaji": "SHIO KYABETSU SARADA",
+    "yolo_name": "salted_cabbage_salad",
+    "nutrition":{
+        "energy": 100,
+        "protein": 10,
+        "fat": 5,
+        "carbohydrates": 20,
+        "fiber": 2,
+        "vegetables": 50
+    }
+});
+const jikasei=new MenuObject(menuObjects, {
+    "display_name": "中 自家製カレー",
+    "jan_code": "2121052120800",
+    "price": 341,
+    "romaji": "homemade_curry",
+    "yolo_name": "homemade_curry",
+    "nutrition":{
+        "energy": 200,
+        "protein": 20,
+        "fat": 10,
+        "carbohydrates": 40,
+        "fiber": 4,
+        "vegetables": 100
+    }
+});
+const shiokyabetsuBbox=new Bbox(bboxesObject, {
+    x: 50,
+    y: 50,
+    w: 100,
+    h: 100
+}, shiokyabetsu);
+shiokyabetsu.bbox = shiokyabetsuBbox;
+const jikaseiBbox=new Bbox(bboxesObject, {
+    x: 200,
+    y: 50,
+    w: 100,
+    h: 100
+}, jikasei);
+jikasei.bbox = jikaseiBbox;
+
+menuObjects.onItemListChanged();
 
 // const testButton = document.getElementById('start-button');
 // testButton.addEventListener('click', async()=>{
