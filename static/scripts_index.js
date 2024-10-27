@@ -1291,32 +1291,6 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     } catch (error) {
         alert(error.message);
     }
-    // ----------
-    // ---栄養表示の部分
-    // ----------
-    // 栄養情報を模擬データとして設定（実際はAPIから取得）
-    const nutritionData = [
-        { energy: 200, protein: 10, fat: 5, carbs: 30, fiber: 2, vegetable: 50 },
-        { energy: 400, protein: 20, fat: 10, carbs: 60, fiber: 4, vegetable: 100 },
-        { energy: 600, protein: 30, fat: 15, carbs: 90, fiber: 6, vegetable: 150 }
-    ];
-
-    // 栄養情報をテーブルに追加
-    const tbody = document.getElementById('nutrition-table-body');
-    tbody.innerHTML = ''; // 既存の内容をクリア
-
-    nutritionData.forEach(item => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${item.energy}</td>
-            <td>${item.protein}</td>
-            <td>${item.fat}</td>
-            <td>${item.carbs}</td>
-            <td>${item.fiber}</td>
-            <td>${item.vegetable}</td>
-        `;
-        tbody.appendChild(row);
-    });
 
     // ----------
     // ---抽選部分
