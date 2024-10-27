@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import TypedDict
 import random
 import base64
-from modules.Types import MenuObject
+from modules.Types import MenuObject, Nutrition
 
 
 voice_data = {
@@ -11,10 +11,10 @@ voice_data = {
             "voice": "いらっしゃいませなのだ",
             "voice_path": "jph/voices/01_いらっしゃいませなのだ.wav",
         },
-        {
-            "voice": "箸とかスプーンとか、忘れずにもっていくのだ",
-            "voice_path": "jph/voices/06_箸とかスプーンとか、忘れずにもっていくのだ.wav",
-        },
+        # {
+        #     "voice": "箸とかスプーンとか、忘れずにもっていくのだ",
+        #     "voice_path": "jph/voices/06_箸とかスプーンとか、忘れずにもっていくのだ.wav",
+        # },
     ],
     "menu": [
         {
@@ -31,7 +31,7 @@ voice_data = {
             "voice": "授業お疲れ様なのだ",
             "voice_path": "jph/voices/04_授業お疲れ様なのだ.wav",
         },
-    ],
+    ]
 }
 
 
@@ -40,7 +40,7 @@ class VoiceData(TypedDict):
     voice_path: str
 
 
-def choose_voice(menu_objects: list[MenuObject]) -> VoiceData:
+def choose_voice(menu_objects: list[MenuObject],nutrition_ratio:Nutrition) -> VoiceData:
     # 時間、メニュー、ランダムから、条件に合う音声を選択する
 
     # ---メニューから音声候補を選ぶ
@@ -85,10 +85,30 @@ def choose_voice(menu_objects: list[MenuObject]) -> VoiceData:
         if current_time == value:
             time_voice_candidates.append({"voice": voice, "voice_path": voice_path})
     print(f"\x1b[32m{time_voice_candidates}\x1b[0m")
+    
+    # ---栄養素から音声候補を選ぶ
+    
+    # {
+    #     "energy": float,  # エネルギー(kcal)
+    #     "protein": float,  # たんぱく質(g)
+    #     "fat": float,  # 脂質(g)
+    #     "carbohydrates": float,  # 炭水化物(g)
+    #     "fiber": float,  # 食物繊維(g)
+    #     "vegetables": float,  # 野菜(g)
+    # }
+    nutrition_voice_candidates: list[VoiceData] = []
+    print(nutrition_ratio)
+    if nutrition_ratio["energy"] > 1.5:
+        nutrition_voice_candidates.append({"voice": "カロリーが高いのだ", "voice_path": "jph/voices/カロリー過多.wav"})
+    if nutrition_ratio["vegetables"] < 0.5:
+        nutrition_voice_candidates.append({"voice": "もっと野菜を食べるのだ", "voice_path": "jph/voices/野菜不足.wav"})
+    all_nutrition_abs = sum([abs(nutrition_ratio[key]-1) for key in nutrition_ratio.keys()])
+    if all_nutrition_abs<0.5:
+        nutrition_voice_candidates.append({"voice": "栄養バランスがすばらしいのだ", "voice_path": "jph/voices/バランス良い.wav"})
 
     # ---音声候補を統合する
     voice_candidates = (
-        menu_voice_candidates + random_voice_candidates + time_voice_candidates
+        menu_voice_candidates + random_voice_candidates + time_voice_candidates+nutrition_voice_candidates
     )
     # ---音声候補からランダムに選ぶ
     choice = random.choice(voice_candidates)

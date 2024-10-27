@@ -11,6 +11,8 @@ import random
 import json
 from flask import Flask, send_file, abort
 
+import simpleaudio
+
 from Yolov9Wrapper.Yolov9Wrapper import Yolov9
 from incomings.variables import EnvVariables
 from jph.Speech import choose_voice, encode_voice_data
@@ -209,24 +211,53 @@ def start_inference():
     }
 
     for item in menu_objects:
+        nutrition = item.get('nutrition')
         # 各栄養素の合計値を更新
-        if item.get('energy'):
-            nutrition_totals['energy'] += float(item['energy'])
-        if item.get('protein'):
-            nutrition_totals['protein'] += float(item['protein'])
-        if item.get('fat'):
-            nutrition_totals['fat'] += float(item['fat'])
-        if item.get('carbohydrates'):
-            nutrition_totals['carbohydrates'] += float(item['carbohydrates'])
-        if item.get('fiber'):
-            nutrition_totals['fiber'] += float(item['fiber'])
-        if item.get('vegetables'):
-            nutrition_totals['vegetables'] += float(item['vegetables'])
+        if nutrition.get('energy'):
+            nutrition_totals['energy'] += float(nutrition['energy'])
+        if nutrition.get('protein'):
+            nutrition_totals['protein'] += float(nutrition['protein'])
+        if nutrition.get('fat'):
+            nutrition_totals['fat'] += float(nutrition['fat'])
+        if nutrition.get('carbohydrates'):
+            nutrition_totals['carbohydrates'] += float(nutrition['carbohydrates'])
+        if nutrition.get('fiber'):
+            nutrition_totals['fiber'] += float(nutrition['fiber'])
+        if nutrition.get('vegetables'):
+            nutrition_totals['vegetables'] += float(nutrition['vegetables'])
+            
+    # ---一食分の栄養素に占める割合を計算
+    ONE_MEAL_NUTRITION = {
+        'energy': 750,
+        'protein': 20,
+        'fat': 22,
+        'carbohydrates': 80,
+        'fiber': 8,
+        'vegetables': 100,
+    }
+        
+    nutrition_ratio ={
+        "energy": nutrition_totals['energy'] / ONE_MEAL_NUTRITION['energy'],
+        "protein": nutrition_totals['protein'] / ONE_MEAL_NUTRITION['protein'],
+        "fat": nutrition_totals['fat'] / ONE_MEAL_NUTRITION['fat'],
+        "carbohydrates": nutrition_totals['carbohydrates'] / ONE_MEAL_NUTRITION['carbohydrates'],
+        "fiber": nutrition_totals['fiber'] / ONE_MEAL_NUTRITION['fiber'],
+        "vegetables": nutrition_totals['vegetables'] / ONE_MEAL_NUTRITION['vegetables'],
+    }
     
     # ---[JPHacks用]音声を選び、エンコード・返却する
-    voice_data=choose_voice(menu_objects)
+    voice_data=choose_voice(menu_objects,nutrition_ratio)
     voice_base64=encode_voice_data(voice_data)
     
+    # ---音声を再生する
+    # NOTE: 本来はブラウザから音声が再生されるが、
+    # Raspberry Piにはスピーカーが付いていないため、
+    # サーバー側で音声を再生する……
+    
+    # エクスプローラーで音声ファイルを開く
+    audio_path="./"+voice_data['voice_path']
+    # os.system(f"start {audio_path}")
+        
     # ---レスポンスを返す
     # OsaraShohinResultとほぼ同じ形式で返す
     return jsonify({
@@ -445,6 +476,7 @@ def handle_execution_request(data):
     uuid = int(data['uuid'])
     jan_cords = data['jan_codes']
     isHit=data['isHit']
+    print(f"isHit: {isHit}")
     # データを1つの辞書にまとめる
     message_data = {
         'message': 'サーバーからPython実行を要求しています',
