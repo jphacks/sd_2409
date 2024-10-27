@@ -1236,87 +1236,7 @@ document.getElementById('confirm-button').addEventListener('click', async functi
     // ----------
     // ---抽選部分
     // ----------
-
-    const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
-    const isHit = Math.random() < hitProbability; // あたりかどうかの判定
-
-    const videoType = isHit ? 'hit' : 'miss'; // あたり/はずれに応じたフォルダ選択
-
-    try {
-        const response = await fetch(`/get_random_video?type=${videoType}`);
-        if (!response.ok) throw new Error('動画の取得に失敗しました');
-
-        const videoData = await response.json();
-        const videoUrl = videoData.video_url;
-
-        // ポップアップを開き、動画と終了後のあたりメッセージを表示
-        const popup = window.open("", "_blank", "width=800,height=600");
-
-        if (popup) {
-            popup.document.write(`
-                <!DOCTYPE html>
-                <html lang="ja">
-                <head>
-                    <meta charset="UTF-8">
-                    <title>動画再生</title>
-                    <style>
-                        body {
-                            margin: 0;
-                            display: flex;
-                            flex-direction: column;
-                            justify-content: flex-start;
-                            align-items: center;
-                            height: 100vh;
-                            background-color: black;
-                        }
-                        #hitMessage {
-                            display: none;
-                            color: yellow;
-                            font-size: 48px;
-                            text-align: center;
-                            margin-top: 20px;
-                            position: absolute;
-                            top: 10px;
-                        }
-                        video {
-                            width: 100%;
-                            height: auto;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div id="hitMessage">あたり！</div>
-                    <video id="popupVideo" controls autoplay muted playsinline>
-                        <source src="${videoUrl}" type="video/mp4">
-                        お使いのブラウザは動画をサポートしていません。
-                    </video>
-                    <script>
-                        const video = document.getElementById('popupVideo');
-                        const hitMessage = document.getElementById('hitMessage');
-
-                        video.addEventListener('ended', () => {
-                            if (${isHit}) {
-                                hitMessage.style.display = 'block'; // あたりメッセージを表示
-                            }
-                        });
-
-                        video.play().catch(error => console.error('自動再生に失敗しました:', error));
-                    </script>
-                </body>
-                </html>
-            `);
-
-            // あたりの場合にPythonファイルを実行する
-            if (isHit) {
-                await fetch('/run_hit_script', { method: 'POST' });
-            }
-        } else {
-            alert('ポップアップがブロックされました。');
-        }
-    } catch (error) {
-        alert(error.message);
-    }
-
+    await lottery();
 
     const uuid = this.getAttribute('data-uuid'); // data-uuid属性からUUIDを取得
     console.log("Pythonの実行を要求します");
@@ -1328,10 +1248,13 @@ document.getElementById('confirm-button').addEventListener('click', async functi
         'jan_codes': menuObjects.getJanCodes()
     });
 
+    // ----------
     // ---最終的な結果(アノテーションなど)をログ用APIに送る
+    // ----------
     // ---画像を取り出す
     const detectImageElement = document.getElementById('detected-image');
     const imageBase64 = detectImageElement.src;
+    // ---送信する
     await fetch("/logging", {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1457,6 +1380,154 @@ document.getElementById('cancel-button').addEventListener('click', function () {
     const uuid = document.getElementById('confirm-button').getAttribute('data-uuid');
     window.location.href = '/start/' + uuid;
 });
+
+// document.getElementById("lotteryPopupDiv").addEventListener('click', function (e) {
+//     if (e.target.id === "lotteryPopupDiv") {
+//         document.getElementById('lotteryPopupDiv').style.transform="translateY(100%)";
+//     }
+// });
+
+async function lottery() {
+    const hitProbability = 0.5; // あたりの出現確率 (0.0 ~ 1.0)
+    const isHit = Math.random() < hitProbability; // あたりかどうかの判定
+
+    // const videoType = isHit ? 'hit' : 'miss'; // あたり/はずれに応じたフォルダ選択
+
+    try {
+        // const response = await fetch(`/get_random_video?type=${videoType}`);
+        // if (!response.ok) throw new Error('動画の取得に失敗しました');
+
+        // const videoData = await response.json();
+        // const videoUrl = videoData.video_url;
+
+        // ポップアップを開き、動画と終了後のあたりメッセージを表示
+        // const popup = window.open("", "_blank", "width=800,height=600");
+
+        const lotteryPopupDiv = document.getElementById('lotteryPopupDiv');
+        const roulettePointerImage = document.getElementById('lotteryRoulettePointerImage');
+        const lotteryMessageP = document.getElementById('lotteryMessageP');
+
+        // ---ポップアップ画面を表示する
+        lotteryPopupDiv.style.display = 'flex';
+        lotteryPopupDiv.style.transform = "translateY(0%)";
+        // ---スタイルを初期化する
+        roulettePointerImage.style.animation = 'none'; // アニメーションを一時停止
+        lotteryMessageP.style.opacity = 0; // メッセージを非表示
+
+        // ---回転角度を計算する
+        const hitAngle = Math.random() * 140 + 20; // 20~160度の間でランダムに決定
+        const missAngle = Math.random() * 140 + 200; // 200~340度の間でランダムに決定
+        const overRotateCount = 10//Math.floor(Math.random() * 5) + 1; // 1~5回の追加回転
+
+        // ---回転をリセットする
+        const prevTransition = roulettePointerImage.style.transition;
+        roulettePointerImage.style.transition = 'none';
+        roulettePointerImage.style.transform = `translate(-50%, -50%) rotate(0deg)`;
+        roulettePointerImage.style.transition = prevTransition;
+
+        await wait(500);
+        // ---回転を開始する
+        const drumRollSound = new Audio('/static/roulette/drum_roll.mp3');
+        drumRollSound.play();
+        roulettePointerImage.style.transform = `translate(-50%, -50%) rotate(${isHit ? hitAngle + 360 * overRotateCount : missAngle + 360 * overRotateCount}deg)`;
+        await wait(1000); // 回転の待ち時間
+        drumRollSound.pause();
+        const drumFinishSound = new Audio('/static/roulette/drum_finish.mp3');
+        drumFinishSound.play();
+        // ---あたりだったら、メッセージを表示する
+        lotteryMessageP.textContent = isHit ? 'あたり！' : 'はずれ…';
+        lotteryMessageP.style.opacity = 1;
+        await wait(3000); // メッセージ表示の待ち時間。
+        // ---表示をリセットする
+        lotteryPopupDiv.style.transform = "translateY(100%)";
+        lotteryMessageP.style.opacity = 0; // メッセージを非表示
+        await wait(500); // ポップアップが下に隠れるのを待つ
+        // ---回転をリセットする
+        roulettePointerImage.style.transition = 'none';
+        roulettePointerImage.style.transform = `translate(-50%, -50%) rotate(0deg)`;
+        await wait(10);
+        roulettePointerImage.style.transition = prevTransition;
+
+
+        // // ---ポップアップ画面を表示する
+        // const popupVideo = document.getElementById("popupVideo");
+
+        // // ---動画等を再生する
+        // // popupVideo.src = "/static/videos/hit/roulet_1.mp4";
+        // popupVideo.src = videoUrl
+        // popupVideo.onloadedmetadata = () => {
+        //     // popupVideoのアスペクト比を、動画のアスペクト比に合わせる
+        //     const aspectRatio = popupVideo.videoWidth / popupVideo.videoHeight;
+        //     popupVideo.style.aspectRatio = aspectRatio;
+        // }
+        // popupVideo.controls = false;
+        // popupVideo.play();
+
+        // if (popup) {
+        //     popup.document.write(`
+        //         <!DOCTYPE html>
+        //         <html lang="ja">
+        //         <head>
+        //             <meta charset="UTF-8">
+        //             <title>動画再生</title>
+        //             <style>
+        //                 body {
+        //                     margin: 0;
+        //                     display: flex;
+        //                     flex-direction: column;
+        //                     justify-content: flex-start;
+        //                     align-items: center;
+        //                     height: 100vh;
+        //                     background-color: black;
+        //                 }
+        //                 #hitMessage {
+        //                     display: none;
+        //                     color: yellow;
+        //                     font-size: 48px;
+        //                     text-align: center;
+        //                     margin-top: 20px;
+        //                     position: absolute;
+        //                     top: 10px;
+        //                 }
+        //                 video {
+        //                     width: 100%;
+        //                     height: auto;
+        //                 }
+        //             </style>
+        //         </head>
+        //         <body>
+        //             <div id="hitMessage">あたり！</div>
+        //             <video id="popupVideo" controls autoplay muted playsinline>
+        //                 <source src="${videoUrl}" type="video/mp4">
+        //                 お使いのブラウザは動画をサポートしていません。
+        //             </video>
+        //             <script>
+        //                 const video = document.getElementById('popupVideo');
+        //                 const hitMessage = document.getElementById('hitMessage');
+
+        //                 video.addEventListener('ended', () => {
+        //                     if (${isHit}) {
+        //                         hitMessage.style.display = 'block'; // あたりメッセージを表示
+        //                     }
+        //                 });
+
+        //                 video.play().catch(error => console.error('自動再生に失敗しました:', error));
+        //             </script>
+        //         </body>
+        //         </html>
+        //     `);
+
+        //     // あたりの場合にPythonファイルを実行する
+        //     if (isHit) {
+        //         await fetch('/run_hit_script', { method: 'POST' });
+        //     }
+        // } else {
+        //     alert('ポップアップがブロックされました。');
+        // }
+    } catch (error) {
+        alert(error.message);
+    }
+}
 
 // ----------
 // ---各種インスタンスの作成
@@ -1633,23 +1704,25 @@ debugButton.addEventListener('click', async () => {
 // ---[デバッグ用]右クリックで、いろいろやる
 
 document.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
     // console.log('menuObjects:', menuObjects);
     // console.log('bboxesObject:', bboxesObject);
     // 「/static/あたりなのだ.wav」を再生する
 
-    toggleZundamon = !toggleZundamon;
-    if (toggleZundamon) {
-        omedetou()
-    }
+    // toggleZundamon = !toggleZundamon;
+    // if (toggleZundamon) {
+    //     omedetou()
+    // }
+    lottery()
 });
-// ---ずんだもん無限再生
-let toggleZundamon = false
-function omedetou() {
-    const audio = new Audio('/static/おめでとうなのだ.wav');
-    audio.play();
-    audio.addEventListener('ended', () => {
-        if (toggleZundamon) {
-            omedetou()
-        }
-    });
-}
+// // ---ずんだもん無限再生
+// let toggleZundamon = false
+// function omedetou() {
+//     const audio = new Audio('/static/おめでとうなのだ.wav');
+//     audio.play();
+//     audio.addEventListener('ended', () => {
+//         if (toggleZundamon) {
+//             omedetou()
+//         }
+//     });
+// }
